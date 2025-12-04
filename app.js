@@ -290,11 +290,13 @@ function handleParseTextToTable() {
 }
 
 /**
- * Very simple parser for lines in the form:
- *   Jane Doe 1234567 32.56
- * i.e. last value = hours (number with optional decimals),
- *      second-to-last value = partner number (digits),
- *      rest of the line = name.
+ * Parser for Starbucks Tip Distribution Report format:
+ * Home Store | Partner Name | Partner Number | Total Tippable Hours
+ * Example: "69600 Ailuogwemhe, Jodie O US37008498 9.22"
+ * 
+ * Also handles simpler formats:
+ *   - "Name Hours" (e.g., "John Doe 32.56")
+ *   - "Name Number Hours" (e.g., "John Doe 1234567 32.56")
  */
 function parseOcrToPartners(text) {
     const lines = text.split(/\r?\n/);
@@ -304,44 +306,116 @@ function parseOcrToPartners(text) {
         const line = rawLine.trim();
         if (!line) continue;
 
-        // Skip header-ish lines
+        // Skip header lines
         if (/partner\s*name/i.test(line)) continue;
-        if (/tippable/i.test(line)) continue;
-        if (/hours/i.test(line) && /total/i.test(line)) continue;
+        if (/home\s*store/i.test(line)) continue;
+        if (/tippable/i.test(line) && /hours/i.test(line)) continue;
+        if (/total\s*tippable/i.test(line)) continue;
+        if (/time\s*period/i.test(line)) continue;
+        if (/executed/i.test(line)) continue;
+        if (/store\s*number/i.test(line)) continue;
+        if (/data\s*disclaimer/i.test(line)) continue;
+        if (/tip\s*distribution\s*report/i.test(line)) continue;
 
-        const tokens = line.split(/\s+/);
-        if (tokens.length < 2) continue;
+        // Try to extract data from the line
+        // Pattern 1: Starbucks format with store number
+        // "69600 Ailuogwemhe, Jodie O US37008498 9.22"
+        const starbucksPattern = /^(\d{5})\s+(.+?)\s+(US\d+)\s+(\d+\.?\d*)$/i;
+        let match = line.match(starbucksPattern);
 
-        const hoursToken = tokens[tokens.length - 1];
+        if (match) {
+            const name = match[2].trim();
+            const number = match[3];
+            const hours = parseFloat(match[4]);
 
-        // Validate hours (must be a number)
-        if (!/^\d+(\.\d+)?$/.test(hoursToken)) continue;
-        const hours = parseFloat(hoursToken);
-        if (!isFinite(hours)) continue;
-
-        // Check for optional partner number in the second-to-last token
-        let number = "";
-        let nameTokens = tokens.slice(0, -1);
-
-        if (nameTokens.length > 0) {
-            const candidateNumber = nameTokens[nameTokens.length - 1];
-            // If it looks like a partner number (digits), treat it as such
-            if (/^\d+$/.test(candidateNumber)) {
-                number = candidateNumber;
-                nameTokens.pop();
+            if (name && isFinite(hours)) {
+                parsed.push({ name, number, hours });
+                continue;
             }
         }
 
-        const name = nameTokens.join(" ").trim();
+        // Pattern 2: Without store number but with US partner number
+        // "Ailuogwemhe, Jodie O US37008498 9.22"
+        const usNumberPattern = /^(.+?)\s+(US\d+)\s+(\d+\.?\d*)$/i;
+        match = line.match(usNumberPattern);
 
-        // We need at least a name OR a number to consider this a valid row
-        if (!name && !number) continue;
+        if (match) {
+            const name = match[1].trim();
+            const number = match[2];
+            const hours = parseFloat(match[3]);
 
-        parsed.push({
-            name,
-            number,
-            hours,
-        });
+            if (name && isFinite(hours)) {
+                parsed.push({ name, number, hours });
+                continue;
+            }
+        }
+
+        // Pattern 3: Name with numeric partner number and hours
+        // "John Doe 1234567 32.56"
+        const numericPattern = /^(.+?)\s+(\d{6,})\s+(\d+\.?\d*)$/;
+        match = line.match(numericPattern);
+
+        if (match) {
+            const name = match[1].trim();
+            const number = match[2];
+            const hours = parseFloat(match[3]);
+
+            if (name && isFinite(hours)) {
+                parsed.push({ name, number, hours });
+                continue;
+            }
+        }
+
+        // Pattern 4: Simple name and hours only
+        // "John Doe 32.56"
+        const simplePattern = /^(.+?)\s+(\d+\.?\d*)$/;
+        match = line.match(simplePattern);
+
+        if (match) {
+            const nameCandidate = match[1].trim();
+            const hours = parseFloat(match[2]);
+
+            // Make sure the name doesn't look like just numbers
+            if (nameCandidate && !/^\d+$/.test(nameCandidate) && isFinite(hours) && hours > 0 && hours < 100) {
+                parsed.push({ name: nameCandidate, number: "", hours });
+                continue;
+            }
+        }
+
+        // Pattern 5: Fallback - try to find any number that looks like hours at the end
+        const tokens = line.split(/\s+/);
+        if (tokens.length >= 2) {
+            const lastToken = tokens[tokens.length - 1];
+            const hoursMatch = lastToken.match(/^(\d+\.?\d*)$/);
+
+            if (hoursMatch) {
+                const hours = parseFloat(hoursMatch[1]);
+                if (isFinite(hours) && hours > 0 && hours < 100) {
+                    let number = "";
+                    let nameTokens = tokens.slice(0, -1);
+
+                    // Check if second-to-last is a partner number (US prefix or just digits)
+                    if (nameTokens.length > 0) {
+                        const lastNameToken = nameTokens[nameTokens.length - 1];
+                        if (/^US\d+$/i.test(lastNameToken) || /^\d{6,}$/.test(lastNameToken)) {
+                            number = lastNameToken;
+                            nameTokens = nameTokens.slice(0, -1);
+                        }
+                    }
+
+                    // Remove store number from the beginning if present
+                    if (nameTokens.length > 0 && /^\d{5}$/.test(nameTokens[0])) {
+                        nameTokens = nameTokens.slice(1);
+                    }
+
+                    const name = nameTokens.join(" ").trim();
+
+                    if (name) {
+                        parsed.push({ name, number, hours });
+                    }
+                }
+            }
+        }
     }
 
     return parsed;
@@ -566,17 +640,22 @@ function runCalculations() {
 }
 
 function clearResults() {
+    const resultsSection = document.getElementById('results-section');
+    if (resultsSection) {
+        resultsSection.classList.remove('visible');
+    }
     if (resultsBody) {
         resultsBody.innerHTML = "";
     }
     if (billsSummary) {
-        billsSummary.innerHTML = '<p class="muted">Once you run a calculation, you will see a summary of all bills needed here.</p>';
+        billsSummary.innerHTML = '';
     }
 }
 
 // ---------- RESULTS RENDERING ----------
 
 function renderResultsTable(rows) {
+    const resultsSection = document.getElementById('results-section');
     if (!resultsBody) return;
     resultsBody.innerHTML = "";
 
@@ -595,6 +674,11 @@ function renderResultsTable(rows) {
     `;
         resultsBody.appendChild(tr);
     });
+
+    // Show results section
+    if (resultsSection) {
+        resultsSection.classList.add('visible');
+    }
 }
 
 function renderSummary(
@@ -606,28 +690,13 @@ function renderSummary(
 ) {
     if (!billsSummary) return;
 
-    const diff = sumWholeDollarPayout - totalTipsVal;
-
-    let diffLabel = "Whole-bill payouts exactly match total tips.";
-    if (diff > 0) {
-        diffLabel = "You are paying $" + diff.toFixed(2) + " more in whole bills than the raw total tips (because every partner rounds up).";
-    } else if (diff < 0) {
-        diffLabel = "You are paying $" + Math.abs(diff).toFixed(2) + " less in whole bills than the raw tips (unusual with round up; check values).";
-    }
-
     billsSummary.innerHTML = `
-    <p><strong>Summary</strong></p>
-    <p>Hourly tip rate (truncated to cents): <strong>$${hourlyRateTruncated.toFixed(2)}</strong> per hour.</p>
-    <p>Sum of partner tips (decimal): <strong>$${sumDecimalTips.toFixed(2)}</strong></p>
-    <p>Total cash payout (whole dollars): <strong>$${sumWholeDollarPayout.toFixed(0)}</strong></p>
-    <p>Total tips entered: <strong>$${totalTipsVal.toFixed(2)}</strong></p>
-    <p>${diffLabel}</p>
-    <p>Order this many bills to cover all partner payouts:</p>
+    <p><strong>$${hourlyRateTruncated.toFixed(2)}</strong> per hour &bull; <strong>$${sumWholeDollarPayout.toFixed(0)}</strong> total payout</p>
     <ul>
-      <li>$20 bills: <strong>${totalsBills.twenties}</strong></li>
-      <li>$10 bills: <strong>${totalsBills.tens}</strong></li>
-      <li>$5 bills: <strong>${totalsBills.fives}</strong></li>
-      <li>$1 bills: <strong>${totalsBills.ones}</strong></li>
+      <li>$20<strong>${totalsBills.twenties}</strong></li>
+      <li>$10<strong>${totalsBills.tens}</strong></li>
+      <li>$5<strong>${totalsBills.fives}</strong></li>
+      <li>$1<strong>${totalsBills.ones}</strong></li>
     </ul>
   `;
 }

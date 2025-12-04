@@ -3,21 +3,20 @@
 
 <head>
     <meta charset="UTF-8" />
-    <title>Starbucks Partner Tips Distribution</title>
+    <title>TipJar - Partner Tips Distribution</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description"
-        content="Calculate and distribute partner tips fairly using OCR technology powered by Azure AI Vision." />
+    <meta name="description" content="Calculate and distribute partner tips fairly using OCR technology." />
 
-    <!-- Google Font: clean, easy to read -->
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
 
     <!-- Styles -->
     <link rel="stylesheet" href="styles.css" />
 
     <!-- Azure AI Vision Configuration -->
-    <!-- API credentials are injected during GitHub Actions build from repository secrets -->
     <script>
         window.AZURE_CONFIG = {
             endpoint: '__AZURE_VISION_ENDPOINT__',
@@ -27,153 +26,159 @@
 </head>
 
 <body>
-    <header class="top-bar">
-        <div class="top-bar-inner">
-            <div class="logo-circle"></div>
-            <div class="title-block">
-                <h1>TipJar</h1>
-                <p></p>
-            </div>
-        </div>
-    </header>
-
-    <main class="page">
-        <!-- STEP 1: Upload / OCR -->
-        <section class="card">
-            <h2>1. Import tippable hours</h2>
-            <p class="muted">
-                Upload a screenshot or photo of the Tips Distribution screen or paper. The tool will
-                read partner names, numbers, and tippable hours using Azure AI Vision for accurate results.
-            </p>
-
-            <label class="file-input-label">
-                <span>Select image or take photo</span>
-                <input id="image-upload" type="file" accept="image/*" capture="environment" />
-            </label>
-
-            <div id="ocr-status" class="badge badge-soft">No image loaded yet.</div>
-
-            <details class="details-block">
-                <summary>Show raw OCR text (optional)</summary>
-                <p class="muted">
-                    If something looks off, you can edit the text below and click
-                    <strong>"Parse text into table"</strong> to regenerate the rows.
-                </p>
-                <textarea id="ocr-raw-text" rows="6" spellcheck="false"></textarea>
-                <button id="parse-text-btn" type="button" class="btn btn-secondary">
-                    Parse text into table
-                </button>
-            </details>
-        </section>
-
-        <!-- STEP 2: Partner table -->
-        <section class="card">
-            <h2>2. Review partners and hours</h2>
-            <p class="muted">
-                Check the table below. All cells are editable. You can add, remove, or adjust partners
-                before calculating tips.
-            </p>
-
-            <div class="table-actions">
-                <button id="add-row-btn" type="button" class="btn btn-outline">
-                    + Add Partner
-                </button>
-                <button id="clear-table-btn" type="button" class="btn btn-ghost">
-                    Clear All
-                </button>
-                <span class="pill">
-                    Total tippable hours:
-                    <strong id="total-hours">0.00</strong>
-                </span>
-            </div>
-
-            <div class="table-wrapper">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Partner Name</th>
-                            <th>Partner Number</th>
-                            <th>Total Tippable Hours</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody id="partner-table-body">
-                        <!-- Rows added dynamically -->
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-        <!-- STEP 3: Total tips + calculations -->
-        <section class="card">
-            <h2>3. Enter total weekly tips</h2>
-            <p class="muted">
-                Enter the total weekly tip dollars for this store (for the partners listed above).
-            </p>
-
-            <div class="form-grid">
-                <div class="form-group">
-                    <label for="total-tips">Total weekly tips ($)</label>
-                    <input id="total-tips" type="number" min="0" step="0.01" placeholder="e.g. 812.45" />
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    <span class="logo-text">TipJar</span>
                 </div>
+            </div>
+        </header>
 
-                <div class="form-group">
-                    <label>Hourly tip rate (truncated)</label>
-                    <div id="hourly-rate-display" class="metric">
-                        $0.00 per hour
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Upload Section -->
+            <section class="card upload-card">
+                <div class="upload-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                </div>
+                <p class="upload-title">Upload your partner hours report</p>
+                <label class="upload-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    <span>Upload Report</span>
+                    <input id="image-upload" type="file" accept="image/*" capture="environment" />
+                </label>
+                <p class="upload-hint">Supported formats: PNG, JPG, JPEG, GIF</p>
+                <div id="ocr-status" class="ocr-status"></div>
+            </section>
+
+            <!-- Partners Table (Hidden until data loaded) -->
+            <section class="card partners-card" id="partners-section">
+                <div class="section-header">
+                    <h2>Partners</h2>
+                    <div class="header-actions">
+                        <button id="add-row-btn" type="button" class="btn-icon" title="Add Partner">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                        </button>
+                        <button id="clear-table-btn" type="button" class="btn-icon btn-icon-danger" title="Clear All">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path
+                                    d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                                </path>
+                            </svg>
+                        </button>
                     </div>
                 </div>
-            </div>
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Partner #</th>
+                                <th>Hours</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="partner-table-body">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="total-hours-row">
+                    <span>Total Hours:</span>
+                    <strong id="total-hours">0.00</strong>
+                </div>
+            </section>
 
-            <button id="calculate-btn" type="button" class="btn btn-primary">
-                Calculate partner tips
+            <!-- OCR Text (Collapsible) -->
+            <details class="card ocr-details" id="ocr-details">
+                <summary>Edit OCR Text</summary>
+                <textarea id="ocr-raw-text" rows="4" spellcheck="false"
+                    placeholder="OCR text will appear here..."></textarea>
+                <button id="parse-text-btn" type="button" class="btn btn-secondary">
+                    Parse Text
+                </button>
+            </details>
+
+            <!-- Total Tips Input -->
+            <section class="card tips-card">
+                <div class="tips-input-group">
+                    <label for="total-tips">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        Total Tip Amount
+                    </label>
+                    <div class="input-wrapper">
+                        <span class="currency-symbol">$</span>
+                        <input id="total-tips" type="number" min="0" step="0.01" placeholder="0.00" />
+                    </div>
+                </div>
+                <div id="hourly-rate-display" class="hourly-rate"></div>
+            </section>
+
+            <!-- Calculate Button -->
+            <button id="calculate-btn" type="button" class="btn btn-primary btn-large">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                Calculate Distribution
             </button>
-        </section>
 
-        <!-- STEP 4: Results -->
-        <section class="card">
-            <h2>4. Partner payouts & denominations</h2>
-            <p class="muted">
-                Each partner's tips are calculated using the truncated hourly rate (to the cent). Their
-                cash payout is then rounded up to the nearest whole dollar
-                (e.g. $44.61 → $45).
-            </p>
+            <!-- Results Section -->
+            <section class="card results-card" id="results-section">
+                <h2>Distribution Summary</h2>
+                <div class="table-wrapper">
+                    <table class="data-table results-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Partner #</th>
+                                <th class="numeric">Hours</th>
+                                <th class="numeric">Tips</th>
+                                <th class="numeric">Payout</th>
+                                <th class="numeric">$20</th>
+                                <th class="numeric">$10</th>
+                                <th class="numeric">$5</th>
+                                <th class="numeric">$1</th>
+                            </tr>
+                        </thead>
+                        <tbody id="results-body">
+                        </tbody>
+                    </table>
+                </div>
+                <div id="bills-summary" class="bills-summary"></div>
+            </section>
+        </main>
 
-            <div class="table-wrapper">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Partner Name</th>
-                            <th>Partner Number</th>
-                            <th class="numeric">Hours</th>
-                            <th class="numeric">Tips (decimal)</th>
-                            <th class="numeric">Cash Payout ($)</th>
-                            <th class="numeric">$20s</th>
-                            <th class="numeric">$10s</th>
-                            <th class="numeric">$5s</th>
-                            <th class="numeric">$1s</th>
-                        </tr>
-                    </thead>
-                    <tbody id="results-body">
-                        <!-- Results rows -->
-                    </tbody>
-                </table>
-            </div>
-
-            <div id="bills-summary" class="summary-block">
-                <p class="muted">
-                    Once you run a calculation, you'll see a summary of all bills needed here, including
-                    total $1 bills so baristas later in the list still get their fair share.
-                </p>
-            </div>
-        </section>
-    </main>
-
-    <footer class="footer">
-        <p>
-            OCR powered by Azure AI Vision. Your images are processed securely.
-        </p>
-    </footer>
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Made by <strong>William Walsh</strong></p>
+            <p class="store-info">Starbucks Store# 66900</p>
+        </footer>
+    </div>
 
     <!-- App logic -->
     <script src="app.js"></script>
