@@ -99,26 +99,40 @@ function fileToBase64(file) {
 }
 
 /**
- * Call Azure AI Vision Read API
- * Uses the Read API for better accuracy with formatted text
+ * Call Azure Document Intelligence (Form Recognizer) Read API
+ * Uses the prebuilt-read model for document text extraction
  */
 async function callAzureVisionOCR(imageBase64) {
     const config = getAzureConfig();
 
     if (!config.endpoint || config.endpoint === '__AZURE_VISION_ENDPOINT__') {
-        throw new Error("Azure Vision endpoint not configured. Please set up your environment variables.");
+        throw new Error("Azure endpoint not configured. Please set up your environment variables.");
     }
 
     if (!config.apiKey || config.apiKey === '__AZURE_VISION_API_KEY__') {
-        throw new Error("Azure Vision API key not configured. Please set up your environment variables.");
+        throw new Error("Azure API key not configured. Please set up your environment variables.");
     }
 
     // Ensure endpoint doesn't have trailing slash
     const endpoint = config.endpoint.replace(/\/$/, '');
 
-    // Step 1: Submit the image for analysis using Read API
-    const analyzeUrl = `${endpoint}/vision/v3.2/read/analyze`;
+    // Try Document Intelligence API first, fall back to Computer Vision
+    let analyzeUrl;
+    let isDocIntelligence = false;
 
+    // Check if endpoint looks like Document Intelligence (formrecognizer or documentintelligence)
+    if (endpoint.includes('cognitiveservices') && !endpoint.includes('vision')) {
+        // Document Intelligence endpoint
+        analyzeUrl = `${endpoint}/formrecognizer/documentModels/prebuilt-read:analyze?api-version=2023-07-31`;
+        isDocIntelligence = true;
+    } else {
+        // Try Computer Vision endpoint
+        analyzeUrl = `${endpoint}/vision/v3.2/read/analyze`;
+    }
+
+    console.log('Using API:', analyzeUrl);
+
+    // Step 1: Submit the image for analysis
     const submitResponse = await fetch(analyzeUrl, {
         method: 'POST',
         headers: {
@@ -131,25 +145,35 @@ async function callAzureVisionOCR(imageBase64) {
     if (!submitResponse.ok) {
         const errorText = await submitResponse.text();
         console.error('Azure API Error:', errorText);
+
+        // If Document Intelligence failed, try Computer Vision
+        if (isDocIntelligence) {
+            console.log('Trying Computer Vision API as fallback...');
+            return await callComputerVisionOCR(imageBase64, config);
+        }
+
         throw new Error(`Azure API error: ${submitResponse.status} - ${submitResponse.statusText}`);
     }
 
     // Step 2: Get the operation location from headers
-    const operationLocation = submitResponse.headers.get('Operation-Location');
+    const operationLocation = submitResponse.headers.get('Operation-Location') ||
+        submitResponse.headers.get('operation-location');
     if (!operationLocation) {
         throw new Error("No operation location returned from Azure");
     }
 
+    console.log('Operation location:', operationLocation);
+
     // Step 3: Poll for results
     let result = null;
     let attempts = 0;
-    const maxAttempts = 30; // Max 30 seconds wait
+    const maxAttempts = 60; // Max 60 seconds wait
 
     while (attempts < maxAttempts) {
         await sleep(1000); // Wait 1 second between polls
         attempts++;
 
-        setOcrStatus(`Processing image... ${Math.min(attempts * 3, 95)}%`);
+        setOcrStatus(`Processing image... ${Math.min(attempts * 2, 95)}%`);
 
         const resultResponse = await fetch(operationLocation, {
             method: 'GET',
@@ -163,20 +187,101 @@ async function callAzureVisionOCR(imageBase64) {
         }
 
         result = await resultResponse.json();
+        console.log('Poll result status:', result.status);
 
-        if (result.status === 'succeeded') {
+        if (result.status === 'succeeded' || result.status === 'completed') {
             break;
         } else if (result.status === 'failed') {
-            throw new Error("Azure Vision analysis failed");
+            console.error('Analysis failed:', result);
+            throw new Error("Azure analysis failed");
         }
         // Otherwise, status is 'running' or 'notStarted', keep polling
     }
 
-    if (!result || result.status !== 'succeeded') {
-        throw new Error("Timeout waiting for Azure Vision results");
+    if (!result || (result.status !== 'succeeded' && result.status !== 'completed')) {
+        throw new Error("Timeout waiting for Azure results");
     }
 
-    // Extract text from results
+    // Extract text from results - handle both API response formats
+    const lines = [];
+
+    // Document Intelligence format
+    if (result.analyzeResult && result.analyzeResult.content) {
+        console.log('Raw content:', result.analyzeResult.content);
+        return result.analyzeResult.content;
+    }
+
+    // Document Intelligence pages format
+    if (result.analyzeResult && result.analyzeResult.pages) {
+        for (const page of result.analyzeResult.pages) {
+            for (const line of page.lines || []) {
+                lines.push(line.content || line.text);
+            }
+        }
+        if (lines.length > 0) {
+            console.log('Extracted lines:', lines);
+            return lines.join('\n');
+        }
+    }
+
+    // Computer Vision format
+    if (result.analyzeResult && result.analyzeResult.readResults) {
+        for (const page of result.analyzeResult.readResults) {
+            for (const line of page.lines || []) {
+                lines.push(line.text);
+            }
+        }
+        console.log('Extracted lines:', lines);
+        return lines.join('\n');
+    }
+
+    console.log('Full result:', JSON.stringify(result, null, 2));
+    return lines.join('\n');
+}
+
+/**
+ * Fallback: Call Azure Computer Vision Read API
+ */
+async function callComputerVisionOCR(imageBase64, config) {
+    const endpoint = config.endpoint.replace(/\/$/, '');
+    const analyzeUrl = `${endpoint}/vision/v3.2/read/analyze`;
+
+    const submitResponse = await fetch(analyzeUrl, {
+        method: 'POST',
+        headers: {
+            'Ocp-Apim-Subscription-Key': config.apiKey,
+            'Content-Type': 'application/octet-stream'
+        },
+        body: base64ToArrayBuffer(imageBase64)
+    });
+
+    if (!submitResponse.ok) {
+        throw new Error(`Computer Vision API error: ${submitResponse.status}`);
+    }
+
+    const operationLocation = submitResponse.headers.get('Operation-Location');
+    if (!operationLocation) {
+        throw new Error("No operation location returned");
+    }
+
+    let result = null;
+    let attempts = 0;
+
+    while (attempts < 30) {
+        await sleep(1000);
+        attempts++;
+        setOcrStatus(`Processing image... ${Math.min(attempts * 3, 95)}%`);
+
+        const resultResponse = await fetch(operationLocation, {
+            method: 'GET',
+            headers: { 'Ocp-Apim-Subscription-Key': config.apiKey }
+        });
+
+        result = await resultResponse.json();
+        if (result.status === 'succeeded') break;
+        if (result.status === 'failed') throw new Error("Analysis failed");
+    }
+
     const lines = [];
     if (result.analyzeResult && result.analyzeResult.readResults) {
         for (const page of result.analyzeResult.readResults) {
@@ -185,7 +290,6 @@ async function callAzureVisionOCR(imageBase64) {
             }
         }
     }
-
     return lines.join('\n');
 }
 
@@ -290,111 +394,120 @@ function handleParseTextToTable() {
 }
 
 /**
- * Parser for Starbucks Tip Distribution Report format:
- * Home Store | Partner Name | Partner Number | Total Tippable Hours
- * Example: "69600 Ailuogwemhe, Jodie O US37008498 9.22"
- * 
- * Also handles simpler formats:
- *   - "Name Hours" (e.g., "John Doe 32.56")
- *   - "Name Number Hours" (e.g., "John Doe 1234567 32.56")
+ * Parser for Starbucks Tip Distribution Report format.
+ * Handles multiple variations of OCR output including:
+ * - "69600 Ailuogwemhe, Jodie O US37008498 9.22" (full format)
+ * - "Ailuogwemhe, Jodie O US37008498 9.22" (without store)
+ * - "Name 32.56" (simple format)
+ * - Table cell data extracted separately
  */
 function parseOcrToPartners(text) {
+    console.log('Parsing OCR text:', text);
+
     const lines = text.split(/\r?\n/);
     const parsed = [];
+
+    // Skip patterns - headers and metadata
+    const skipPatterns = [
+        /partner\s*name/i,
+        /home\s*store/i,
+        /tippable.*hours/i,
+        /total\s*tippable/i,
+        /time\s*period/i,
+        /executed/i,
+        /store\s*number/i,
+        /data\s*disclaimer/i,
+        /tip\s*distribution/i,
+        /^\s*total\s*$/i,
+        /includes\s*all\s*updates/i,
+        /^\d{2}\/\d{2}\/\d{4}/,  // Date patterns
+    ];
 
     for (const rawLine of lines) {
         const line = rawLine.trim();
         if (!line) continue;
+        if (line.length < 3) continue;
 
-        // Skip header lines
-        if (/partner\s*name/i.test(line)) continue;
-        if (/home\s*store/i.test(line)) continue;
-        if (/tippable/i.test(line) && /hours/i.test(line)) continue;
-        if (/total\s*tippable/i.test(line)) continue;
-        if (/time\s*period/i.test(line)) continue;
-        if (/executed/i.test(line)) continue;
-        if (/store\s*number/i.test(line)) continue;
-        if (/data\s*disclaimer/i.test(line)) continue;
-        if (/tip\s*distribution\s*report/i.test(line)) continue;
+        // Check skip patterns
+        let shouldSkip = false;
+        for (const pattern of skipPatterns) {
+            if (pattern.test(line)) {
+                shouldSkip = true;
+                break;
+            }
+        }
+        if (shouldSkip) {
+            console.log('Skipping line:', line);
+            continue;
+        }
 
-        // Try to extract data from the line
-        // Pattern 1: Starbucks format with store number
+        console.log('Processing line:', line);
+
+        // Pattern 1: Full Starbucks format with 5-digit store number
         // "69600 Ailuogwemhe, Jodie O US37008498 9.22"
-        const starbucksPattern = /^(\d{5})\s+(.+?)\s+(US\d+)\s+(\d+\.?\d*)$/i;
-        let match = line.match(starbucksPattern);
-
+        let match = line.match(/^(\d{5})\s+(.+?)\s+(US\d+)\s+(\d+\.?\d*)$/i);
         if (match) {
-            const name = match[2].trim();
-            const number = match[3];
-            const hours = parseFloat(match[4]);
-
-            if (name && isFinite(hours)) {
-                parsed.push({ name, number, hours });
+            const entry = { name: match[2].trim(), number: match[3], hours: parseFloat(match[4]) };
+            console.log('Pattern 1 match:', entry);
+            if (entry.name && isFinite(entry.hours)) {
+                parsed.push(entry);
                 continue;
             }
         }
 
-        // Pattern 2: Without store number but with US partner number
+        // Pattern 2: Without store number, with US partner number
         // "Ailuogwemhe, Jodie O US37008498 9.22"
-        const usNumberPattern = /^(.+?)\s+(US\d+)\s+(\d+\.?\d*)$/i;
-        match = line.match(usNumberPattern);
-
+        match = line.match(/^(.+?)\s+(US\d+)\s+(\d+\.?\d*)$/i);
         if (match) {
-            const name = match[1].trim();
-            const number = match[2];
-            const hours = parseFloat(match[3]);
-
-            if (name && isFinite(hours)) {
-                parsed.push({ name, number, hours });
+            const entry = { name: match[1].trim(), number: match[2], hours: parseFloat(match[3]) };
+            console.log('Pattern 2 match:', entry);
+            if (entry.name && !entry.name.match(/^\d{5}$/) && isFinite(entry.hours)) {
+                parsed.push(entry);
                 continue;
             }
         }
 
-        // Pattern 3: Name with numeric partner number and hours
-        // "John Doe 1234567 32.56"
-        const numericPattern = /^(.+?)\s+(\d{6,})\s+(\d+\.?\d*)$/;
-        match = line.match(numericPattern);
-
+        // Pattern 3: Name with any numeric ID (6+ digits) and hours
+        // "John Doe 1234567 32.56"  
+        match = line.match(/^(.+?)\s+(\d{6,})\s+(\d+\.?\d*)$/);
         if (match) {
-            const name = match[1].trim();
-            const number = match[2];
-            const hours = parseFloat(match[3]);
-
-            if (name && isFinite(hours)) {
-                parsed.push({ name, number, hours });
+            const entry = { name: match[1].trim(), number: match[2], hours: parseFloat(match[3]) };
+            console.log('Pattern 3 match:', entry);
+            if (entry.name && isFinite(entry.hours)) {
+                parsed.push(entry);
                 continue;
             }
         }
 
-        // Pattern 4: Simple name and hours only
+        // Pattern 4: Just name and hours (decimal number at end)
         // "John Doe 32.56"
-        const simplePattern = /^(.+?)\s+(\d+\.?\d*)$/;
-        match = line.match(simplePattern);
-
+        match = line.match(/^(.+?)\s+(\d+\.\d+)$/);
         if (match) {
             const nameCandidate = match[1].trim();
             const hours = parseFloat(match[2]);
-
-            // Make sure the name doesn't look like just numbers
-            if (nameCandidate && !/^\d+$/.test(nameCandidate) && isFinite(hours) && hours > 0 && hours < 100) {
-                parsed.push({ name: nameCandidate, number: "", hours });
+            // Exclude if name is just numbers or a store number
+            if (nameCandidate && !/^\d+$/.test(nameCandidate) && isFinite(hours) && hours > 0 && hours < 200) {
+                const entry = { name: nameCandidate, number: "", hours };
+                console.log('Pattern 4 match:', entry);
+                parsed.push(entry);
                 continue;
             }
         }
 
-        // Pattern 5: Fallback - try to find any number that looks like hours at the end
+        // Pattern 5: Flexible token-based parsing
         const tokens = line.split(/\s+/);
         if (tokens.length >= 2) {
             const lastToken = tokens[tokens.length - 1];
-            const hoursMatch = lastToken.match(/^(\d+\.?\d*)$/);
 
-            if (hoursMatch) {
-                const hours = parseFloat(hoursMatch[1]);
-                if (isFinite(hours) && hours > 0 && hours < 100) {
+            // Check if last token is a valid hours number
+            if (/^\d+\.?\d*$/.test(lastToken)) {
+                const hours = parseFloat(lastToken);
+
+                if (isFinite(hours) && hours > 0 && hours < 200) {
                     let number = "";
                     let nameTokens = tokens.slice(0, -1);
 
-                    // Check if second-to-last is a partner number (US prefix or just digits)
+                    // Check if second-to-last is a partner number
                     if (nameTokens.length > 0) {
                         const lastNameToken = nameTokens[nameTokens.length - 1];
                         if (/^US\d+$/i.test(lastNameToken) || /^\d{6,}$/.test(lastNameToken)) {
@@ -403,21 +516,24 @@ function parseOcrToPartners(text) {
                         }
                     }
 
-                    // Remove store number from the beginning if present
+                    // Remove 5-digit store number from beginning
                     if (nameTokens.length > 0 && /^\d{5}$/.test(nameTokens[0])) {
                         nameTokens = nameTokens.slice(1);
                     }
 
                     const name = nameTokens.join(" ").trim();
 
-                    if (name) {
-                        parsed.push({ name, number, hours });
+                    if (name && name.length > 1 && !/^\d+$/.test(name)) {
+                        const entry = { name, number, hours };
+                        console.log('Pattern 5 match:', entry);
+                        parsed.push(entry);
                     }
                 }
             }
         }
     }
 
+    console.log('Parsed results:', parsed);
     return parsed;
 }
 
