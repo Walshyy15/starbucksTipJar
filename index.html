@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Starbucks Partner Tips Distribution</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description"
+        content="Calculate and distribute partner tips fairly using OCR technology powered by Azure AI Vision." />
+
+    <!-- Google Font: clean, easy to read -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet" />
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css" />
+
+    <!-- Azure AI Vision Configuration -->
+    <!-- API credentials are injected during GitHub Actions build from repository secrets -->
+    <script>
+        window.AZURE_CONFIG = {
+            endpoint: '__AZURE_VISION_ENDPOINT__',
+            apiKey: '__AZURE_VISION_API_KEY__'
+        };
+    </script>
+</head>
+
+<body>
+    <header class="top-bar">
+        <div class="top-bar-inner">
+            <div class="logo-circle"></div>
+            <div class="title-block">
+                <h1>Partner Tips Distribution</h1>
+                <p>Scan, verify, and calculate weekly tips in minutes.</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="page">
+        <!-- STEP 1: Upload / OCR -->
+        <section class="card">
+            <h2>1. Import tippable hours</h2>
+            <p class="muted">
+                Upload a screenshot or photo of the Tips Distribution screen or paper. The tool will
+                read partner names, numbers, and tippable hours using Azure AI Vision for accurate results.
+            </p>
+
+            <label class="file-input-label">
+                <span>Select image or take photo</span>
+                <input id="image-upload" type="file" accept="image/*" capture="environment" />
+            </label>
+
+            <div id="ocr-status" class="badge badge-soft">No image loaded yet.</div>
+
+            <details class="details-block">
+                <summary>Show raw OCR text (optional)</summary>
+                <p class="muted">
+                    If something looks off, you can edit the text below and click
+                    <strong>"Parse text into table"</strong> to regenerate the rows.
+                </p>
+                <textarea id="ocr-raw-text" rows="6" spellcheck="false"></textarea>
+                <button id="parse-text-btn" type="button" class="btn btn-secondary">
+                    Parse text into table
+                </button>
+            </details>
+        </section>
+
+        <!-- STEP 2: Partner table -->
+        <section class="card">
+            <h2>2. Review partners and hours</h2>
+            <p class="muted">
+                Check the table below. All cells are editable. You can add, remove, or adjust partners
+                before calculating tips.
+            </p>
+
+            <div class="table-actions">
+                <button id="add-row-btn" type="button" class="btn btn-outline">
+                    + Add Partner
+                </button>
+                <button id="clear-table-btn" type="button" class="btn btn-ghost">
+                    Clear All
+                </button>
+                <span class="pill">
+                    Total tippable hours:
+                    <strong id="total-hours">0.00</strong>
+                </span>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Partner Name</th>
+                            <th>Partner Number</th>
+                            <th>Total Tippable Hours</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="partner-table-body">
+                        <!-- Rows added dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- STEP 3: Total tips + calculations -->
+        <section class="card">
+            <h2>3. Enter total weekly tips</h2>
+            <p class="muted">
+                Enter the total weekly tip dollars for this store (for the partners listed above).
+            </p>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="total-tips">Total weekly tips ($)</label>
+                    <input id="total-tips" type="number" min="0" step="0.01" placeholder="e.g. 812.45" />
+                </div>
+
+                <div class="form-group">
+                    <label>Hourly tip rate (truncated)</label>
+                    <div id="hourly-rate-display" class="metric">
+                        $0.00 per hour
+                    </div>
+                </div>
+            </div>
+
+            <button id="calculate-btn" type="button" class="btn btn-primary">
+                Calculate partner tips
+            </button>
+        </section>
+
+        <!-- STEP 4: Results -->
+        <section class="card">
+            <h2>4. Partner payouts & denominations</h2>
+            <p class="muted">
+                Each partner's tips are calculated using the truncated hourly rate (to the cent). Their
+                cash payout is then rounded up to the nearest whole dollar
+                (e.g. $44.61 → $45).
+            </p>
+
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Partner Name</th>
+                            <th>Partner Number</th>
+                            <th class="numeric">Hours</th>
+                            <th class="numeric">Tips (decimal)</th>
+                            <th class="numeric">Cash Payout ($)</th>
+                            <th class="numeric">$20s</th>
+                            <th class="numeric">$10s</th>
+                            <th class="numeric">$5s</th>
+                            <th class="numeric">$1s</th>
+                        </tr>
+                    </thead>
+                    <tbody id="results-body">
+                        <!-- Results rows -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="bills-summary" class="summary-block">
+                <p class="muted">
+                    Once you run a calculation, you'll see a summary of all bills needed here, including
+                    total $1 bills so baristas later in the list still get their fair share.
+                </p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>
+            OCR powered by Azure AI Vision. Your images are processed securely.
+        </p>
+    </footer>
+
+    <!-- App logic -->
+    <script src="app.js"></script>
+</body>
+
+</html>
