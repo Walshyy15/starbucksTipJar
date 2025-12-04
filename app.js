@@ -149,7 +149,7 @@ async function callAzureVisionOCR(imageBase64) {
         await sleep(1000); // Wait 1 second between polls
         attempts++;
 
-        setOcrStatus(`Processing image… ${Math.min(attempts * 3, 95)}%`);
+        setOcrStatus(`Processing image... ${Math.min(attempts * 3, 95)}%`);
 
         const resultResponse = await fetch(operationLocation, {
             method: 'GET',
@@ -214,19 +214,26 @@ async function handleImageUpload(event) {
         return;
     }
 
+    setOcrStatus("Checking Azure configuration...");
+
     const config = getAzureConfig();
     if (!config.endpoint || config.endpoint === '__AZURE_VISION_ENDPOINT__' ||
         !config.apiKey || config.apiKey === '__AZURE_VISION_API_KEY__') {
-        setOcrStatus("Azure Vision API not configured. Please set up environment variables.");
+        setOcrStatus("Azure Vision API not configured. Add secrets to GitHub and redeploy.");
+        console.error("Azure Vision API credentials not configured. Current config:", {
+            endpoint: config.endpoint ? (config.endpoint.includes('__') ? 'PLACEHOLDER' : 'SET') : 'MISSING',
+            apiKey: config.apiKey ? (config.apiKey.includes('__') ? 'PLACEHOLDER' : 'SET') : 'MISSING'
+        });
+        alert("Azure Vision API is not configured yet.\n\n1. Go to GitHub repo Settings > Secrets > Actions\n2. Add AZURE_VISION_ENDPOINT\n3. Add AZURE_VISION_API_KEY\n4. Re-run the deployment workflow");
         return;
     }
 
-    setOcrStatus("Uploading image to Azure AI Vision… 0%");
+    setOcrStatus("Uploading image to Azure AI Vision... 0%");
 
     try {
         // Convert file to base64
         const base64 = await fileToBase64(file);
-        setOcrStatus("Processing with Azure AI Vision… 10%");
+        setOcrStatus("Processing with Azure AI Vision... 10%");
 
         // Call Azure Vision API
         const text = await callAzureVisionOCR(base64);
@@ -391,7 +398,7 @@ function renderPartnerTable() {
       </td>
       <td style="text-align:right;">
         <button class="icon-button" type="button" title="Remove partner" data-action="delete">
-          ×
+          x
         </button>
       </td>
     `;
@@ -563,8 +570,7 @@ function clearResults() {
         resultsBody.innerHTML = "";
     }
     if (billsSummary) {
-        billsSummary.innerHTML =
-            '<p class="muted">Once you run a calculation, you'll see a summary of all bills needed here, including total $1 bills so everyone gets their fair share.</p > ';
+        billsSummary.innerHTML = '<p class="muted">Once you run a calculation, you will see a summary of all bills needed here.</p>';
     }
 }
 
@@ -602,22 +608,16 @@ function renderSummary(
 
     const diff = sumWholeDollarPayout - totalTipsVal;
 
-    const diffLabel =
-        diff > 0
-            ? `You are paying $${diff.toFixed(
-                2
-            )} more in whole bills than the raw total tips (because every partner rounds up).`
-            : diff < 0
-                ? `You are paying $${Math.abs(diff).toFixed(
-                    2
-                )} less in whole bills than the raw tips (unusual with "round up"; check values).`
-                : "Whole-bill payouts exactly match total tips.";
+    let diffLabel = "Whole-bill payouts exactly match total tips.";
+    if (diff > 0) {
+        diffLabel = "You are paying $" + diff.toFixed(2) + " more in whole bills than the raw total tips (because every partner rounds up).";
+    } else if (diff < 0) {
+        diffLabel = "You are paying $" + Math.abs(diff).toFixed(2) + " less in whole bills than the raw tips (unusual with round up; check values).";
+    }
 
     billsSummary.innerHTML = `
     <p><strong>Summary</strong></p>
-    <p>Hourly tip rate (truncated to cents): <strong>$${hourlyRateTruncated.toFixed(
-        2
-    )}</strong> per hour.</p>
+    <p>Hourly tip rate (truncated to cents): <strong>$${hourlyRateTruncated.toFixed(2)}</strong> per hour.</p>
     <p>Sum of partner tips (decimal): <strong>$${sumDecimalTips.toFixed(2)}</strong></p>
     <p>Total cash payout (whole dollars): <strong>$${sumWholeDollarPayout.toFixed(0)}</strong></p>
     <p>Total tips entered: <strong>$${totalTipsVal.toFixed(2)}</strong></p>
