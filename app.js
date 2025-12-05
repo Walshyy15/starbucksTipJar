@@ -332,17 +332,6 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function stripMetadataTokens(text) {
-    if (!text) return "";
-
-    let cleaned = text;
-    for (const pattern of METADATA_PATTERNS) {
-        cleaned = cleaned.replace(pattern, '');
-    }
-
-    return cleaned.replace(/\n{2,}/g, "\n").trim();
-}
-
 async function handleImageUpload(event) {
     const fileInput = event?.target || document.getElementById("image-upload");
     const file = fileInput?.files?.[0];
@@ -575,7 +564,7 @@ function parseOcrToPartners(text) {
 
     // Fallback: token-bucket parsing for when OCR returns a single line or mangled spacing
     if (parsed.length === 0) {
-        const fallbackEntries = parseByTokenBuckets(text);
+        const fallbackEntries = parseByTokenBuckets(metadataStrip, metadataTokens);
         if (fallbackEntries.length > 0) {
             console.log('Fallback token parse results:', fallbackEntries);
             fallbackEntries.forEach(addEntry);
