@@ -1019,6 +1019,8 @@ let lastHourlyRate = 0;
  * Redistribute bills when user manually edits the bill counts.
  * This function reads the edited bill totals and redistributes them
  * across partners based on their payout amounts.
+ * If one bill type is insufficient, it will try to make up the difference
+ * using other denominations.
  */
 function redistributeBills() {
     if (lastCalculationResults.length === 0) return;
@@ -1029,22 +1031,31 @@ function redistributeBills() {
     const fivesInput = document.getElementById('total-fives');
     const onesInput = document.getElementById('total-ones');
 
-    const availableBills = {
+    let availableBills = {
         twenties: parseInt(twentiesInput?.value) || 0,
         tens: parseInt(tensInput?.value) || 0,
         fives: parseInt(fivesInput?.value) || 0,
         ones: parseInt(onesInput?.value) || 0
     };
 
-    // Calculate total available
+    // Calculate total available cash
     const totalAvailable = (availableBills.twenties * 20) +
         (availableBills.tens * 10) +
         (availableBills.fives * 5) +
         (availableBills.ones * 1);
 
+    // Calculate total needed
+    const totalNeeded = lastCalculationResults.reduce((sum, p) => sum + p.wholeDollarPayout, 0);
+
+    // If not enough total cash, we can't fully redistribute
+    // But we'll still do our best with what's available
+
     // Redistribute bills to partners based on their payout
     const updatedResults = [];
     let remainingBills = { ...availableBills };
+
+    // Track totals for updating the UI
+    let usedBills = { twenties: 0, tens: 0, fives: 0, ones: 0 };
 
     // Sort partners by payout (highest first) to allocate larger bills first
     const sortedResults = [...lastCalculationResults].sort((a, b) => b.wholeDollarPayout - a.wholeDollarPayout);
@@ -1053,6 +1064,7 @@ function redistributeBills() {
         let remaining = partner.wholeDollarPayout;
         const breakdown = { twenties: 0, tens: 0, fives: 0, ones: 0 };
 
+        // Try to allocate bills in order of preference: $20, $10, $5, $1
         // Allocate twenties
         while (remaining >= 20 && remainingBills.twenties > 0) {
             breakdown.twenties++;
@@ -1080,6 +1092,31 @@ function redistributeBills() {
             remainingBills.ones--;
             remaining -= 1;
         }
+
+        // If still have remaining, try to make change from larger bills
+        // e.g., if we need $3 but have no $1s, use a $5 and note overpayment
+        if (remaining > 0) {
+            // Try to use a $5 for remaining 1-4, or $10 for remaining 5-9, etc.
+            if (remaining <= 4 && remainingBills.fives > 0) {
+                breakdown.fives++;
+                remainingBills.fives--;
+                remaining = 0; // Slight overpay is acceptable
+            } else if (remaining <= 9 && remainingBills.tens > 0) {
+                breakdown.tens++;
+                remainingBills.tens--;
+                remaining = 0;
+            } else if (remaining <= 19 && remainingBills.twenties > 0) {
+                breakdown.twenties++;
+                remainingBills.twenties--;
+                remaining = 0;
+            }
+        }
+
+        // Track used bills
+        usedBills.twenties += breakdown.twenties;
+        usedBills.tens += breakdown.tens;
+        usedBills.fives += breakdown.fives;
+        usedBills.ones += breakdown.ones;
 
         updatedResults.push({
             ...partner,
