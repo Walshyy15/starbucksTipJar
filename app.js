@@ -11,6 +11,18 @@
 let partners = []; // { id, name, number, hours }
 let nextPartnerId = 1;
 
+// Common tokens and headers that should be stripped from OCR output
+const METADATA_PATTERNS = [
+    /Store\s*Number[:#]?\s*\d+/gi,
+    /Time\s*Period:[^\n]*/gi,
+    /Executed\s*By:[^\n]*/gi,
+    /Executed\s*On:[^\n]*/gi,
+    /Data\s*Disclaimer[^\n]*/gi,
+    /Includes\s*all\s*updates[^\n]*/gi,
+    /Tip\s*Distribution[^\n]*/gi,
+    /Home\s*Store[^\n]*/gi,
+];
+
 // DOM references
 let partnerTableBody;
 let totalHoursSpan;
@@ -320,6 +332,17 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function stripMetadataTokens(text) {
+    if (!text) return "";
+
+    let cleaned = text;
+    for (const pattern of METADATA_PATTERNS) {
+        cleaned = cleaned.replace(pattern, '');
+    }
+
+    return cleaned.replace(/\n{2,}/g, "\n").trim();
+}
+
 async function handleImageUpload(event) {
     const fileInput = event?.target || document.getElementById("image-upload");
     const file = fileInput?.files?.[0];
@@ -397,15 +420,7 @@ async function handleImageUpload(event) {
 function parseOcrToPartners(text) {
     console.log('Parsing OCR text:', text);
 
-    const metadataStrip = text
-        .replace(/Store\s*Number[:#]?\s*\d+/gi, '')
-        .replace(/Time\s*Period:[^\n]*/gi, '')
-        .replace(/Executed\s*By:[^\n]*/gi, '')
-        .replace(/Executed\s*On:[^\n]*/gi, '')
-        .replace(/Data\s*Disclaimer[^\n]*/gi, '')
-        .replace(/Includes\s*all\s*updates[^\n]*/gi, '')
-        .replace(/Tip\s*Distribution[^\n]*/gi, '')
-        .replace(/Home\s*Store[^\n]*/gi, '');
+    const metadataStrip = stripMetadataTokens(text);
 
     const lines = metadataStrip.split(/\r?\n/);
     const parsed = [];
