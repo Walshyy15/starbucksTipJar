@@ -23,6 +23,113 @@ const METADATA_PATTERNS = [
     /Home\s*Store[^\n]*/gi,
 ];
 
+// Set of common metadata tokens to filter out during parsing
+const metadataTokens = new Set([
+    'store', 'number', 'time', 'period', 'executed', 'by', 'on', 'data',
+    'disclaimer', 'includes', 'all', 'updates', 'tip', 'distribution',
+    'home', 'partner', 'name', 'tippable', 'hours', 'total', 'report'
+]);
+
+/**
+ * Strip common metadata patterns from OCR text
+ * @param {string} text - Raw OCR text
+ * @returns {string} - Cleaned text with metadata removed
+ */
+function stripMetadataTokens(text) {
+    if (!text || typeof text !== 'string') return '';
+
+    let cleaned = text;
+
+    // Apply all metadata patterns
+    for (const pattern of METADATA_PATTERNS) {
+        cleaned = cleaned.replace(pattern, ' ');
+    }
+
+    // Remove multiple whitespace and clean up
+    cleaned = cleaned.replace(/\s+/g, ' ').trim();
+
+    return cleaned;
+}
+
+/**
+ * Fallback parser using token buckets for OCR that returns mangled spacing
+ * @param {string} text - OCR text
+ * @param {Set} metaTokens - Set of metadata tokens to ignore
+ * @returns {Array} - Array of parsed partner entries
+ */
+function parseByTokenBuckets(text, metaTokens) {
+    const entries = [];
+    if (!text) return entries;
+
+    // Split all text into tokens
+    const allTokens = text.split(/\s+/).filter(t => t.length > 0);
+
+    let i = 0;
+    while (i < allTokens.length) {
+        // Look for a pattern: [name tokens] [optional partner number] [hours number]
+        let nameTokens = [];
+        let partnerNumber = '';
+        let hours = null;
+
+        // Collect tokens until we find a decimal number (hours)
+        while (i < allTokens.length) {
+            const token = allTokens[i];
+            const cleanedLower = token.toLowerCase().replace(/[^a-z]/g, '');
+
+            // Skip metadata tokens
+            if (cleanedLower && metaTokens && metaTokens.has(cleanedLower)) {
+                i++;
+                continue;
+            }
+
+            // Check if this is an hours value (decimal number between 0-200)
+            if (/^\d+\.\d+$/.test(token)) {
+                const h = parseFloat(token);
+                if (isFinite(h) && h > 0 && h < 200) {
+                    hours = h;
+                    i++;
+                    break;
+                }
+            }
+
+            // Check if this is a partner number (US followed by digits or 6+ digits)
+            if (/^US\d+$/i.test(token) || /^\d{6,}$/.test(token)) {
+                partnerNumber = token;
+                i++;
+                continue;
+            }
+
+            // Skip 5-digit store numbers at start
+            if (nameTokens.length === 0 && /^\d{5}$/.test(token)) {
+                i++;
+                continue;
+            }
+
+            // This might be part of a name
+            if (!/^\d+$/.test(token) || token.length < 5) {
+                nameTokens.push(token);
+            }
+            i++;
+        }
+
+        // If we found hours and have a name, create an entry
+        if (hours !== null && nameTokens.length > 0) {
+            const name = nameTokens.join(' ').trim();
+            if (name && name.length > 1 && !/^\d+$/.test(name)) {
+                entries.push({
+                    name: name,
+                    number: partnerNumber,
+                    hours: hours
+                });
+            }
+            nameTokens = [];
+            partnerNumber = '';
+        }
+    }
+
+    return entries;
+}
+
 // DOM references
 let partnerTableBody;
 let totalHoursSpan;
@@ -31,6 +138,7 @@ let hourlyRateDisplay;
 let resultsBody;
 let ocrStatusEl;
 let distributionDateEl;
+let billsSummary;
 
 // Azure AI Vision API Configuration
 function getAzureConfig() {
@@ -49,6 +157,7 @@ document.addEventListener("DOMContentLoaded", () => {
     resultsBody = document.getElementById("results-body");
     ocrStatusEl = document.getElementById("ocr-status");
     distributionDateEl = document.getElementById("distribution-date");
+    billsSummary = document.getElementById("bills-summary");
 
     const uploadInput = document.getElementById("image-upload");
     const addRowBtn = document.getElementById("add-row-btn");
@@ -413,6 +522,18 @@ function parseOcrToPartners(text) {
 
     const lines = metadataStrip.split(/\r?\n/);
     const parsed = [];
+
+    // Helper function to add entry to parsed array (for deduplication)
+    function addEntry(entry) {
+        // Check for duplicate (same name and similar hours)
+        const isDuplicate = parsed.some(p =>
+            p.name.toLowerCase() === entry.name.toLowerCase() &&
+            Math.abs(p.hours - entry.hours) < 0.01
+        );
+        if (!isDuplicate) {
+            parsed.push(entry);
+        }
+    }
 
     // Skip patterns - headers and metadata
     const skipPatterns = [
