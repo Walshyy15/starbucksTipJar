@@ -17,9 +17,7 @@ let totalHoursSpan;
 let totalTipsInput;
 let hourlyRateDisplay;
 let resultsBody;
-let billsSummary;
 let ocrStatusEl;
-let ocrRawTextEl;
 let distributionDateEl;
 
 // Azure AI Vision API Configuration
@@ -37,19 +35,15 @@ document.addEventListener("DOMContentLoaded", () => {
     totalTipsInput = document.getElementById("total-tips");
     hourlyRateDisplay = document.getElementById("hourly-rate-display");
     resultsBody = document.getElementById("results-body");
-    billsSummary = document.getElementById("bills-summary");
     ocrStatusEl = document.getElementById("ocr-status");
-    ocrRawTextEl = document.getElementById("ocr-raw-text");
     distributionDateEl = document.getElementById("distribution-date");
 
     const uploadInput = document.getElementById("image-upload");
-    const parseTextBtn = document.getElementById("parse-text-btn");
     const addRowBtn = document.getElementById("add-row-btn");
     const clearTableBtn = document.getElementById("clear-table-btn");
     const calculateBtn = document.getElementById("calculate-btn");
 
     uploadInput.addEventListener("change", handleImageUpload);
-    parseTextBtn.addEventListener("click", handleParseTextToTable);
     addRowBtn.addEventListener("click", () => {
         addEmptyPartnerRow();
         renderPartnerTable();
@@ -315,7 +309,8 @@ function sleep(ms) {
 }
 
 async function handleImageUpload(event) {
-    const file = event.target.files[0];
+    const fileInput = event?.target || document.getElementById("image-upload");
+    const file = fileInput?.files?.[0];
     if (!file) {
         return;
     }
@@ -344,14 +339,20 @@ async function handleImageUpload(event) {
         // Call Azure Vision API
         const text = await callAzureVisionOCR(base64);
 
-        const cleanedText = text.trim();
-        ocrRawTextEl.value = cleanedText;
+        const normalizedText = (() => {
+            if (typeof text === "string") return text;
+            if (Array.isArray(text)) return text.join("\n");
+            if (text == null) return "";
+            return String(text);
+        })();
+
+        const cleanedText = normalizedText.trim();
 
         const parsed = parseOcrToPartners(cleanedText);
 
         if (parsed.length === 0) {
             setOcrStatus(
-                "OCR finished, but no rows were detected. Adjust the text below or enter rows manually."
+                "OCR finished, but no rows were detected. Enter rows manually."
             );
             return;
         }
@@ -373,28 +374,6 @@ async function handleImageUpload(event) {
     }
 }
 
-function handleParseTextToTable() {
-    const text = ocrRawTextEl.value || "";
-    const parsed = parseOcrToPartners(text);
-
-    if (parsed.length === 0) {
-        alert("No valid rows found. Expected format: 'Name [Number] Hours' (e.g. 'John Doe 32.56' or 'John 1234567 32.56')");
-        return;
-    }
-
-    partners = parsed.map((p) => ({
-        id: nextPartnerId++,
-        name: p.name,
-        number: p.number,
-        hours: p.hours,
-    }));
-
-    renderPartnerTable();
-    updateTotalHours();
-    clearResults();
-    setOcrStatus(`Loaded ${partners.length} partners from text.`);
-}
-
 /**
  * Parser for Starbucks Tip Distribution Report format.
  * Handles multiple variations of OCR output including:
@@ -406,9 +385,23 @@ function handleParseTextToTable() {
 function parseOcrToPartners(text) {
     console.log('Parsing OCR text:', text);
 
-    const lines = text.split(/\r?\n/);
+    const metadataStrip = text
+        .replace(/Store\s*Number[:#]?\s*\d+/gi, '')
+        .replace(/Time\s*Period:[^\n]*/gi, '')
+        .replace(/Executed\s*By:[^\n]*/gi, '')
+        .replace(/Executed\s*On:[^\n]*/gi, '')
+        .replace(/Data\s*Disclaimer[^\n]*/gi, '')
+        .replace(/Includes\s*all\s*updates[^\n]*/gi, '')
+        .replace(/Tip\s*Distribution[^\n]*/gi, '')
+        .replace(/Home\s*Store[^\n]*/gi, '');
+
+    const lines = metadataStrip.split(/\r?\n/);
     const parsed = [];
     const seen = new Set();
+
+    const metadataTokens = new Set([
+        'store', 'number', 'period', 'executed', 'disclaimer', 'includes', 'updates', 'report', 'time', 'data'
+    ]);
 
     const addEntry = (entry) => {
         if (!entry || !entry.name || !isFinite(entry.hours)) return;
@@ -449,6 +442,12 @@ function parseOcrToPartners(text) {
         }
         if (shouldSkip) {
             console.log('Skipping line:', line);
+            continue;
+        }
+
+        // Skip metadata lines that were merged into partner text
+        if (line.length > 120 && /(executed|time period|store number|data disclaimer)/i.test(line)) {
+            console.log('Skipping merged metadata line:', line);
             continue;
         }
 
@@ -516,7 +515,10 @@ function parseOcrToPartners(text) {
 
                 if (isFinite(hours) && hours > 0 && hours < 200) {
                     let number = "";
-                    let nameTokens = tokens.slice(0, -1);
+                    let nameTokens = tokens.slice(0, -1).filter((tok) => {
+                        const cleaned = tok.toLowerCase().replace(/[^a-z]/g, '');
+                        return cleaned ? !metadataTokens.has(cleaned) : true;
+                    });
 
                     // Check if second-to-last is a partner number
                     if (nameTokens.length > 0) {
@@ -534,7 +536,7 @@ function parseOcrToPartners(text) {
 
                     const name = nameTokens.join(" ").trim();
 
-                    if (name && name.length > 1 && !/^\d+$/.test(name)) {
+                    if (name && name.length > 1 && nameTokens.length <= 6 && !/^\d+$/.test(name)) {
                         const entry = { name, number, hours };
                         console.log('Pattern 5 match:', entry);
                         addEntry(entry);
@@ -561,6 +563,7 @@ function parseOcrToPartners(text) {
         const headerTokens = new Set([
             'home', 'store', 'partner', 'name', 'number', 'total', 'tippable', 'hours',
             'time', 'period', 'report', 'tip', 'distribution', 'weekly', 'week', 'ending',
+            'executed', 'disclaimer', 'includes', 'updates', 'data'
         ]);
 
         const entries = [];
@@ -591,12 +594,20 @@ function parseOcrToPartners(text) {
 
                     const filteredNameTokens = candidateTokens.filter((t) => {
                         const cleaned = t.toLowerCase().replace(/[^a-z]/g, '');
-                        return cleaned && !headerTokens.has(cleaned);
+                        return cleaned && !headerTokens.has(cleaned) && cleaned.length > 1;
                     });
+
+                    const metadataHits = filteredNameTokens.filter((token) => metadataTokens.has(token)).length;
 
                     const name = filteredNameTokens.join(" ").trim();
 
-                    if (name && /[a-z]/i.test(name)) {
+                    if (
+                        name &&
+                        filteredNameTokens.length > 0 &&
+                        filteredNameTokens.length <= 6 &&
+                        /[a-z]/i.test(name) &&
+                        metadataHits === 0
+                    ) {
                         entries.push({ name, number, hours });
                     }
 
@@ -833,7 +844,6 @@ function runCalculations() {
         totalTipsVal,
         sumDecimalTips,
         sumWholeDollarPayout,
-        totalsBills,
         totalHours
     );
 }
@@ -845,9 +855,6 @@ function clearResults() {
     }
     if (resultsBody) {
         resultsBody.innerHTML = "";
-    }
-    if (billsSummary) {
-        billsSummary.innerHTML = '';
     }
 }
 
@@ -887,10 +894,18 @@ function renderResultsTable(rows) {
         </div>
       </div>
       <div class="bills-row">
-        <span>$20 <strong>${r.breakdown.twenties}</strong></span>
-        <span>$10 <strong>${r.breakdown.tens}</strong></span>
-        <span>$5 <strong>${r.breakdown.fives}</strong></span>
-        <span>$1 <strong>${r.breakdown.ones}</strong></span>
+        <label class="bill-input">$20
+          <input type="number" min="0" inputmode="numeric" value="${r.breakdown.twenties}" aria-label="${safeName} twenties" />
+        </label>
+        <label class="bill-input">$10
+          <input type="number" min="0" inputmode="numeric" value="${r.breakdown.tens}" aria-label="${safeName} tens" />
+        </label>
+        <label class="bill-input">$5
+          <input type="number" min="0" inputmode="numeric" value="${r.breakdown.fives}" aria-label="${safeName} fives" />
+        </label>
+        <label class="bill-input">$1
+          <input type="number" min="0" inputmode="numeric" value="${r.breakdown.ones}" aria-label="${safeName} ones" />
+        </label>
       </div>
     `;
 
@@ -908,11 +923,8 @@ function renderSummary(
     totalTipsVal,
     sumDecimalTips,
     sumWholeDollarPayout,
-    totalsBills,
     totalHours
 ) {
-    if (!billsSummary) return;
-
     const setText = (id, value) => {
         const el = document.getElementById(id);
         if (el) {
@@ -935,20 +947,6 @@ function renderSummary(
     setText("summary-total-tips", `$${totalTipsVal.toFixed(2)}`);
     setText("summary-total-hours", totalHours.toFixed(2));
     setText("summary-hourly-inline", `$${hourlyRateTruncated.toFixed(2)}`);
-
-    billsSummary.innerHTML = [
-        { label: "$20", count: totalsBills.twenties },
-        { label: "$10", count: totalsBills.tens },
-        { label: "$5", count: totalsBills.fives },
-        { label: "$1", count: totalsBills.ones },
-    ]
-        .map((bill) => `
-        <div class="bill-chip">
-          <span class="label">${bill.label}</span>
-          <strong>${bill.count}</strong>
-        </div>
-      `)
-        .join("");
 }
 
 // ---------- SIMPLE HTML ESCAPING HELPERS ----------
