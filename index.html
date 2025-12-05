@@ -157,12 +157,17 @@
                     <div class="calc-formula" id="calc-formula">Total Tips: $0.00 ÷ Total Hours: 0.00 = $0.00 per hour
                     </div>
                     <div class="bills-needed">
-                        <div class="bills-needed-title">Bills Needed:</div>
+                        <div class="bills-needed-title">Bills Needed: <span class="bills-hint">(edit to
+                                redistribute)</span></div>
                         <div class="bills-needed-list" id="bills-needed-list">
-                            <span class="count">0</span> <span class="denom">× $20</span>,
-                            <span class="count">0</span> <span class="denom">× $10</span>,
-                            <span class="count">0</span> <span class="denom">× $5</span>,
-                            <span class="count">0</span> <span class="denom">× $1</span>
+                            <label class="bill-edit"><input type="number" id="total-twenties" min="0" value="0" />
+                                <span>× $20</span></label>
+                            <label class="bill-edit"><input type="number" id="total-tens" min="0" value="0" /> <span>×
+                                    $10</span></label>
+                            <label class="bill-edit"><input type="number" id="total-fives" min="0" value="0" /> <span>×
+                                    $5</span></label>
+                            <label class="bill-edit"><input type="number" id="total-ones" min="0" value="0" /> <span>×
+                                    $1</span></label>
                         </div>
                     </div>
                 </div>

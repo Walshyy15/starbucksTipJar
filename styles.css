@@ -601,20 +601,61 @@ body {
     font-size: 0.75rem;
     font-weight: 600;
     color: var(--muted);
-    margin-bottom: 4px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.bills-hint {
+    font-weight: 400;
+    font-size: 0.7rem;
+    color: var(--accent);
+    opacity: 0.8;
 }
 
 .bills-needed-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+}
+
+.bill-edit {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     font-size: 0.85rem;
     color: var(--text);
 }
 
-.bills-needed-list .count {
+.bill-edit input {
+    width: 48px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
     color: var(--accent-pink);
+    font-size: 0.9rem;
     font-weight: 600;
+    padding: 4px 6px;
+    text-align: center;
+    -moz-appearance: textfield;
+    appearance: textfield;
 }
 
-.bills-needed-list .denom {
+.bill-edit input::-webkit-inner-spin-button,
+.bill-edit input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.bill-edit input:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: rgba(74, 222, 128, 0.1);
+}
+
+.bill-edit span {
     color: var(--text-dim);
 }
 

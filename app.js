@@ -162,6 +162,15 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     calculateBtn.addEventListener("click", runCalculations);
 
+    // Bill count edit listeners - redistribute when changed
+    const billInputs = ['total-twenties', 'total-tens', 'total-fives', 'total-ones'];
+    billInputs.forEach(id => {
+        const input = document.getElementById(id);
+        if (input) {
+            input.addEventListener('input', redistributeBills);
+        }
+    });
+
     // Check Azure configuration
     const config = getAzureConfig();
     if (!config.endpoint || config.endpoint === '__AZURE_VISION_ENDPOINT__' ||
@@ -532,7 +541,9 @@ function parseOcrToPartners(text) {
         /tip\s*distribution/i,
         /^\s*total\s*$/i,
         /includes\s*all\s*updates/i,
-        /^\d{2}\/\d{2}\/\d{4}/,  // Date patterns
+        /^\d{1,2}\/\d{1,2}\/\d{2,4}/,  // Date at start (MM/DD/YYYY or M/D/YY)
+        /\d{1,2}\/\d{1,2}\/\d{2,4}\s*-\s*\d{1,2}\/\d{1,2}\/\d{2,4}/,  // Date range
+        /\d{2}:\d{2}:\d{2}/,  // Time stamp (HH:MM:SS)
     ];
 
     for (const rawLine of lines) {
@@ -897,6 +908,10 @@ function runCalculations() {
         });
     });
 
+    // Store results for redistribution feature
+    lastCalculationResults = results;
+    lastHourlyRate = hourlyRateTruncated;
+
     renderResultsTable(results, hourlyRateTruncated);
     renderSummary(
         hourlyRateTruncated,
@@ -977,16 +992,16 @@ function renderSummary(
         calcFormula.textContent = `Total Tips: $${totalTipsVal.toFixed(2)} ÷ Total Hours: ${totalHours.toFixed(2)} = $${hourlyRateTruncated.toFixed(2)} per hour`;
     }
 
-    // Update bills needed list
-    const billsNeededList = document.getElementById('bills-needed-list');
-    if (billsNeededList) {
-        billsNeededList.innerHTML = `
-            <span class="count">${totalsBills.twenties}</span> <span class="denom">× $20</span>, 
-            <span class="count">${totalsBills.tens}</span> <span class="denom">× $10</span>, 
-            <span class="count">${totalsBills.fives}</span> <span class="denom">× $5</span>, 
-            <span class="count">${totalsBills.ones}</span> <span class="denom">× $1</span>
-        `;
-    }
+    // Update editable bill input fields
+    const twentiesInput = document.getElementById('total-twenties');
+    const tensInput = document.getElementById('total-tens');
+    const fivesInput = document.getElementById('total-fives');
+    const onesInput = document.getElementById('total-ones');
+
+    if (twentiesInput) twentiesInput.value = totalsBills.twenties;
+    if (tensInput) tensInput.value = totalsBills.tens;
+    if (fivesInput) fivesInput.value = totalsBills.fives;
+    if (onesInput) onesInput.value = totalsBills.ones;
 
     // Update distribution date
     if (distributionDateEl) {
@@ -994,6 +1009,87 @@ function renderSummary(
         const options = { month: 'short', day: 'numeric', year: 'numeric' };
         distributionDateEl.textContent = now.toLocaleDateString('en-US', options);
     }
+}
+
+// Store the last calculation results for redistribution
+let lastCalculationResults = [];
+let lastHourlyRate = 0;
+
+/**
+ * Redistribute bills when user manually edits the bill counts.
+ * This function reads the edited bill totals and redistributes them
+ * across partners based on their payout amounts.
+ */
+function redistributeBills() {
+    if (lastCalculationResults.length === 0) return;
+
+    // Read current bill counts from inputs
+    const twentiesInput = document.getElementById('total-twenties');
+    const tensInput = document.getElementById('total-tens');
+    const fivesInput = document.getElementById('total-fives');
+    const onesInput = document.getElementById('total-ones');
+
+    const availableBills = {
+        twenties: parseInt(twentiesInput?.value) || 0,
+        tens: parseInt(tensInput?.value) || 0,
+        fives: parseInt(fivesInput?.value) || 0,
+        ones: parseInt(onesInput?.value) || 0
+    };
+
+    // Calculate total available
+    const totalAvailable = (availableBills.twenties * 20) +
+        (availableBills.tens * 10) +
+        (availableBills.fives * 5) +
+        (availableBills.ones * 1);
+
+    // Redistribute bills to partners based on their payout
+    const updatedResults = [];
+    let remainingBills = { ...availableBills };
+
+    // Sort partners by payout (highest first) to allocate larger bills first
+    const sortedResults = [...lastCalculationResults].sort((a, b) => b.wholeDollarPayout - a.wholeDollarPayout);
+
+    for (const partner of sortedResults) {
+        let remaining = partner.wholeDollarPayout;
+        const breakdown = { twenties: 0, tens: 0, fives: 0, ones: 0 };
+
+        // Allocate twenties
+        while (remaining >= 20 && remainingBills.twenties > 0) {
+            breakdown.twenties++;
+            remainingBills.twenties--;
+            remaining -= 20;
+        }
+
+        // Allocate tens
+        while (remaining >= 10 && remainingBills.tens > 0) {
+            breakdown.tens++;
+            remainingBills.tens--;
+            remaining -= 10;
+        }
+
+        // Allocate fives
+        while (remaining >= 5 && remainingBills.fives > 0) {
+            breakdown.fives++;
+            remainingBills.fives--;
+            remaining -= 5;
+        }
+
+        // Allocate ones
+        while (remaining >= 1 && remainingBills.ones > 0) {
+            breakdown.ones++;
+            remainingBills.ones--;
+            remaining -= 1;
+        }
+
+        updatedResults.push({
+            ...partner,
+            breakdown,
+            adjustedPayout: partner.wholeDollarPayout - remaining
+        });
+    }
+
+    // Re-render partner cards with new breakdown
+    renderResultsTable(updatedResults, lastHourlyRate);
 }
 
 // ---------- SIMPLE HTML ESCAPING HELPERS ----------
