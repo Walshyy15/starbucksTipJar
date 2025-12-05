@@ -406,6 +406,15 @@ function parseOcrToPartners(text) {
 
     const lines = text.split(/\r?\n/);
     const parsed = [];
+    const seen = new Set();
+
+    const addEntry = (entry) => {
+        if (!entry || !entry.name || !isFinite(entry.hours)) return;
+        const key = `${entry.name.toLowerCase()}|${(entry.number || "").toLowerCase()}|${entry.hours}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        parsed.push(entry);
+    };
 
     // Skip patterns - headers and metadata
     const skipPatterns = [
@@ -450,7 +459,7 @@ function parseOcrToPartners(text) {
             const entry = { name: match[2].trim(), number: match[3], hours: parseFloat(match[4]) };
             console.log('Pattern 1 match:', entry);
             if (entry.name && isFinite(entry.hours)) {
-                parsed.push(entry);
+                addEntry(entry);
                 continue;
             }
         }
@@ -462,7 +471,7 @@ function parseOcrToPartners(text) {
             const entry = { name: match[1].trim(), number: match[2], hours: parseFloat(match[3]) };
             console.log('Pattern 2 match:', entry);
             if (entry.name && !entry.name.match(/^\d{5}$/) && isFinite(entry.hours)) {
-                parsed.push(entry);
+                addEntry(entry);
                 continue;
             }
         }
@@ -474,7 +483,7 @@ function parseOcrToPartners(text) {
             const entry = { name: match[1].trim(), number: match[2], hours: parseFloat(match[3]) };
             console.log('Pattern 3 match:', entry);
             if (entry.name && isFinite(entry.hours)) {
-                parsed.push(entry);
+                addEntry(entry);
                 continue;
             }
         }
@@ -489,7 +498,7 @@ function parseOcrToPartners(text) {
             if (nameCandidate && !/^\d+$/.test(nameCandidate) && isFinite(hours) && hours > 0 && hours < 200) {
                 const entry = { name: nameCandidate, number: "", hours };
                 console.log('Pattern 4 match:', entry);
-                parsed.push(entry);
+                addEntry(entry);
                 continue;
             }
         }
@@ -526,15 +535,80 @@ function parseOcrToPartners(text) {
                     if (name && name.length > 1 && !/^\d+$/.test(name)) {
                         const entry = { name, number, hours };
                         console.log('Pattern 5 match:', entry);
-                        parsed.push(entry);
+                        addEntry(entry);
                     }
                 }
             }
         }
     }
 
+    // Fallback: token-bucket parsing for when OCR returns a single line or mangled spacing
+    if (parsed.length === 0) {
+        const fallbackEntries = parseByTokenBuckets(text);
+        if (fallbackEntries.length > 0) {
+            console.log('Fallback token parse results:', fallbackEntries);
+            fallbackEntries.forEach(addEntry);
+        }
+    }
+
     console.log('Parsed results:', parsed);
     return parsed;
+
+    function parseByTokenBuckets(rawText) {
+        const tokens = rawText.split(/\s+/).filter(Boolean);
+        const headerTokens = new Set([
+            'home', 'store', 'partner', 'name', 'number', 'total', 'tippable', 'hours',
+            'time', 'period', 'report', 'tip', 'distribution', 'weekly', 'week', 'ending',
+        ]);
+
+        const entries = [];
+        let bucket = [];
+
+        for (const token of tokens) {
+            const normalizedHoursToken = token.replace(/[^0-9.]/g, '');
+            bucket.push(token);
+
+            if (/^\d+\.?\d*$/.test(normalizedHoursToken)) {
+                const hours = parseFloat(normalizedHoursToken);
+
+                if (isFinite(hours) && hours > 0 && hours < 200) {
+                    const candidateTokens = bucket.slice(0, -1);
+                    let number = "";
+
+                    if (candidateTokens.length > 0) {
+                        const lastToken = candidateTokens[candidateTokens.length - 1].replace(/[^A-Za-z0-9]/g, '');
+                        if (/^US\d+$/i.test(lastToken) || /^\d{6,}$/.test(lastToken)) {
+                            number = lastToken;
+                            candidateTokens.pop();
+                        }
+                    }
+
+                    if (candidateTokens.length > 0 && /^\d{5}$/.test(candidateTokens[0])) {
+                        candidateTokens.shift();
+                    }
+
+                    const filteredNameTokens = candidateTokens.filter((t) => {
+                        const cleaned = t.toLowerCase().replace(/[^a-z]/g, '');
+                        return cleaned && !headerTokens.has(cleaned);
+                    });
+
+                    const name = filteredNameTokens.join(" ").trim();
+
+                    if (name && /[a-z]/i.test(name)) {
+                        entries.push({ name, number, hours });
+                    }
+
+                    bucket = [];
+                }
+            }
+
+            if (bucket.length > 20) {
+                bucket = bucket.slice(-10);
+            }
+        }
+
+        return entries;
+    }
 }
 
 // ---------- TABLE / PARTNER CRUD ----------
