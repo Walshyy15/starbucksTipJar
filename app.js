@@ -730,8 +730,11 @@ function renderPartnerTable() {
         />
       </td>
       <td style="text-align:right;">
-        <button class="icon-button" type="button" title="Remove partner" data-action="delete">
-          x
+        <button class="icon-button" type="button" title="Remove partner" data-action="delete" aria-label="Remove partner">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
         </button>
       </td>
     `;
@@ -979,19 +982,29 @@ function renderSummary(
     totalTipsVal,
     sumDecimalTips,
     sumWholeDollarPayout,
-    totalsBills
+    totalHours
 ) {
-    if (!billsSummary) return;
+    // Update summary stat cards
+    const summaryHours = document.getElementById('summary-hours');
+    const summaryHourly = document.getElementById('summary-hourly');
+    const summaryDistributed = document.getElementById('summary-distributed');
+    const summaryTotalTips = document.getElementById('summary-total-tips');
+    const summaryTotalHours = document.getElementById('summary-total-hours');
+    const summaryHourlyInline = document.getElementById('summary-hourly-inline');
 
-    billsSummary.innerHTML = `
-    <p><strong>$${hourlyRateTruncated.toFixed(2)}</strong> per hour &bull; <strong>$${sumWholeDollarPayout.toFixed(0)}</strong> total payout</p>
-    <ul>
-      <li>$20<strong>${totalsBills.twenties}</strong></li>
-      <li>$10<strong>${totalsBills.tens}</strong></li>
-      <li>$5<strong>${totalsBills.fives}</strong></li>
-      <li>$1<strong>${totalsBills.ones}</strong></li>
-    </ul>
-  `;
+    if (summaryHours) summaryHours.textContent = totalHours.toFixed(2);
+    if (summaryHourly) summaryHourly.textContent = `$${hourlyRateTruncated.toFixed(2)}`;
+    if (summaryDistributed) summaryDistributed.textContent = `$${sumWholeDollarPayout.toFixed(0)}`;
+    if (summaryTotalTips) summaryTotalTips.textContent = `$${totalTipsVal.toFixed(2)}`;
+    if (summaryTotalHours) summaryTotalHours.textContent = totalHours.toFixed(2);
+    if (summaryHourlyInline) summaryHourlyInline.textContent = `$${hourlyRateTruncated.toFixed(2)}`;
+
+    // Update distribution date
+    if (distributionDateEl) {
+        const now = new Date();
+        const options = { month: 'short', day: 'numeric', year: 'numeric' };
+        distributionDateEl.textContent = now.toLocaleDateString('en-US', options);
+    }
 }
 
 // ---------- SIMPLE HTML ESCAPING HELPERS ----------

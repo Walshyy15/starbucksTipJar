@@ -1,17 +1,18 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 
 <head>
     <meta charset="UTF-8" />
     <title>TipJar - Partner Tips Distribution</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Calculate and distribute partner tips fairly using OCR technology." />
+    <meta name="description"
+        content="Calculate and distribute partner tips fairly using OCR technology. A professional tool for Starbucks partners." />
+    <meta name="theme-color" content="#00704a" />
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
     <!-- Styles -->
     <link rel="stylesheet" href="styles.css" />
@@ -30,8 +31,41 @@
         <!-- Header -->
         <header class="header">
             <div class="logo">
-                <span class="logo-icon">📋</span>
+                <div class="logo-mark">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M17 18a5 5 0 0 0-10 0" />
+                        <line x1="12" y1="2" x2="12" y2="9" />
+                        <line x1="4.22" y1="10.22" x2="5.64" y2="11.64" />
+                        <line x1="1" y1="18" x2="3" y2="18" />
+                        <line x1="21" y1="18" x2="23" y2="18" />
+                        <line x1="18.36" y1="11.64" x2="19.78" y2="10.22" />
+                        <line x1="23" y1="22" x2="1" y2="22" />
+                        <polyline points="8 6 12 2 16 6" />
+                    </svg>
+                </div>
                 <span class="logo-text">TipJar</span>
+            </div>
+            <div class="header-actions">
+                <div class="status-badge" id="ocr-ready-badge">
+                    <span class="status-dot"></span>
+                    <span>OCR Ready</span>
+                </div>
+                <button class="theme-toggle" id="theme-toggle" type="button" title="Toggle theme"
+                    aria-label="Toggle dark/light theme">
+                    <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5" />
+                        <line x1="12" y1="1" x2="12" y2="3" />
+                        <line x1="12" y1="21" x2="12" y2="23" />
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                        <line x1="1" y1="12" x2="3" y2="12" />
+                        <line x1="21" y1="12" x2="23" y2="12" />
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                    </svg>
+                </button>
             </div>
         </header>
 
@@ -39,13 +73,28 @@
         <main class="main-content">
             <div class="grid two-column">
                 <!-- Upload Section -->
-                <section class="card upload-card">
-                    <div class="upload-icon">☁️</div>
+                <section class="card upload-card" id="upload-section">
+                    <div class="upload-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="17 8 12 3 7 8" />
+                            <line x1="12" y1="3" x2="12" y2="15" />
+                        </svg>
+                    </div>
                     <p class="upload-title">Upload your partner hours report</p>
-                    <label class="upload-btn">
-                        <span>📤 Upload Report</span>
-                        <input id="image-upload" type="file" accept="image/*" />
-                    </label>
+                    <div class="upload-actions">
+                        <label class="upload-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="17 8 12 3 7 8" />
+                                <line x1="12" y1="3" x2="12" y2="15" />
+                            </svg>
+                            <span>Upload Report</span>
+                            <input id="image-upload" type="file" accept="image/*" />
+                        </label>
+                    </div>
                     <p class="upload-hint">Supported formats: PNG, JPG, JPEG, GIF</p>
                     <div id="ocr-status" class="ocr-status"></div>
                 </section>
@@ -55,8 +104,25 @@
                     <div class="section-header">
                         <h2>Partners</h2>
                         <div class="header-actions">
-                            <button id="add-row-btn" type="button" class="btn-icon" title="Add Partner">+</button>
-                            <button id="clear-table-btn" type="button" class="btn-icon btn-icon-danger" title="Clear All">🗑️</button>
+                            <button id="add-row-btn" type="button" class="btn-icon" title="Add Partner"
+                                aria-label="Add new partner row">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="12" y1="5" x2="12" y2="19" />
+                                    <line x1="5" y1="12" x2="19" y2="12" />
+                                </svg>
+                            </button>
+                            <button id="clear-table-btn" type="button" class="btn-icon btn-icon-danger"
+                                title="Clear All" aria-label="Clear all partners">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="3 6 5 6 21 6" />
+                                    <path
+                                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                    <line x1="10" y1="11" x2="10" y2="17" />
+                                    <line x1="14" y1="11" x2="14" y2="17" />
+                                </svg>
+                            </button>
                         </div>
                     </div>
                     <div class="table-wrapper">
@@ -74,7 +140,7 @@
                         </table>
                     </div>
                     <div class="total-hours-row">
-                        <span>Total Hours:</span>
+                        <span>Total Hours</span>
                         <strong id="total-hours">0.00</strong>
                     </div>
                 </section>
@@ -84,10 +150,18 @@
                 <!-- Total Tips Input -->
                 <section class="card tips-card">
                     <div class="tips-input-group">
-                        <label for="total-tips">💰 Total Tip Amount</label>
+                        <label for="total-tips">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+                                <line x1="1" y1="10" x2="23" y2="10" />
+                            </svg>
+                            Total Tip Amount
+                        </label>
                         <div class="input-wrapper">
                             <span class="currency-symbol">$</span>
-                            <input id="total-tips" type="number" min="0" step="0.01" placeholder="0.00" />
+                            <input id="total-tips" type="number" min="0" step="0.01" placeholder="0.00"
+                                aria-label="Total weekly tips amount" />
                         </div>
                     </div>
                     <div id="hourly-rate-display" class="hourly-rate"></div>
@@ -95,9 +169,23 @@
 
                 <section class="card action-card">
                     <button id="calculate-btn" type="button" class="btn btn-primary btn-large full-width">
-                        🔒 Calculate Distribution
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
+                            <line x1="8" y1="6" x2="16" y2="6" />
+                            <line x1="16" y1="14" x2="16" y2="18" />
+                            <line x1="8" y1="10" x2="8" y2="10.01" />
+                            <line x1="12" y1="10" x2="12" y2="10.01" />
+                            <line x1="16" y1="10" x2="16" y2="10.01" />
+                            <line x1="8" y1="14" x2="8" y2="14.01" />
+                            <line x1="12" y1="14" x2="12" y2="14.01" />
+                            <line x1="8" y1="18" x2="8" y2="18.01" />
+                            <line x1="12" y1="18" x2="12" y2="18.01" />
+                        </svg>
+                        Calculate Distribution
                     </button>
-                    <p class="action-hint">Hourly rate is truncated to 2 decimals; payouts round to the nearest dollar.</p>
+                    <p class="action-hint">Hourly rate is truncated to 2 decimals. Payouts round to the nearest whole
+                        dollar for cash convenience.</p>
                 </section>
             </div>
 
@@ -129,22 +217,30 @@
                 <div class="details-grid">
                     <div class="detail-card">
                         <div class="detail-header">
-                            <span class="icon">🧮</span>
+                            <span class="icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
+                                    <line x1="8" y1="6" x2="16" y2="6" />
+                                    <line x1="8" y1="10" x2="16" y2="10" />
+                                    <line x1="8" y1="14" x2="12" y2="14" />
+                                </svg>
+                            </span>
                             <div>
-                                <p class="eyebrow">Calculation Details</p>
-                                <p class="detail-title">Formula</p>
+                                <p class="eyebrow">Calculation</p>
+                                <p class="detail-title">Formula Details</p>
                             </div>
                         </div>
                         <div class="detail-row">
-                            <span>Total Tips:</span>
+                            <span>Total Tips</span>
                             <strong id="summary-total-tips">$0.00</strong>
                         </div>
                         <div class="detail-row">
-                            <span>Total Hours:</span>
+                            <span>Total Hours</span>
                             <strong id="summary-total-hours">0.00</strong>
                         </div>
                         <div class="detail-row">
-                            <span>Hourly Rate:</span>
+                            <span>Hourly Rate</span>
                             <strong id="summary-hourly-inline">$0.00</strong>
                         </div>
                     </div>
@@ -157,9 +253,52 @@
         <!-- Footer -->
         <footer class="footer">
             <p>Made by <strong>William Walsh</strong></p>
-            <p class="store-info">Starbucks Store# 66900</p>
+            <p class="store-info">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                    <circle cx="12" cy="10" r="3" />
+                </svg>
+                Starbucks Store# 66900
+            </p>
         </footer>
     </div>
+
+    <!-- Theme Toggle Script -->
+    <script>
+        // Theme handling
+        (function () {
+            const html = document.documentElement;
+            const themeToggle = document.getElementById('theme-toggle');
+
+            // Check for saved preference or system preference
+            const savedTheme = localStorage.getItem('theme');
+            const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+            if (savedTheme) {
+                html.setAttribute('data-theme', savedTheme);
+            } else if (systemPrefersDark) {
+                html.setAttribute('data-theme', 'dark');
+            }
+
+            // Toggle theme on button click
+            if (themeToggle) {
+                themeToggle.addEventListener('click', () => {
+                    const currentTheme = html.getAttribute('data-theme');
+                    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                    html.setAttribute('data-theme', newTheme);
+                    localStorage.setItem('theme', newTheme);
+                });
+            }
+
+            // Listen for system preference changes
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                if (!localStorage.getItem('theme')) {
+                    html.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+                }
+            });
+        })();
+    </script>
 
     <!-- App logic -->
     <script src="app.js"></script>
