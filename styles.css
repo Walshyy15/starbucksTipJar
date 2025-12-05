@@ -29,7 +29,7 @@ body {
     min-height: 100vh;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
-    padding: 24px;
+    padding: clamp(14px, 4vw, 28px);
 }
 
 .app-container {
@@ -82,7 +82,7 @@ body {
 }
 
 .grid.two-column {
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 
 /* Cards */
@@ -340,44 +340,6 @@ body {
     color: var(--accent);
 }
 
-/* OCR Details */
-.ocr-details {
-    padding: 18px;
-}
-
-.ocr-details summary {
-    font-size: 0.95rem;
-    color: var(--muted);
-    cursor: pointer;
-    user-select: none;
-}
-
-.ocr-details summary:hover {
-    color: var(--text);
-}
-
-.ocr-details[open] summary {
-    margin-bottom: 14px;
-}
-
-.ocr-details textarea {
-    width: 100%;
-    background: #142a24;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    color: var(--text);
-    font-family: monospace;
-    font-size: 0.9rem;
-    padding: 10px;
-    resize: vertical;
-    margin-bottom: 10px;
-}
-
-.ocr-details textarea:focus {
-    outline: none;
-    border-color: var(--accent);
-}
-
 /* Tips Card */
 .tips-card {
     padding: 18px 20px;
@@ -600,7 +562,7 @@ body {
 
 .partner-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 16px;
     margin-top: 8px;
 }
@@ -666,23 +628,43 @@ body {
 
 .bills-row {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 10px;
     font-size: 0.9rem;
-    color: var(--muted);
 }
 
-.bills-row span {
-    display: inline-flex;
-    align-items: center;
+.bill-input {
+    display: flex;
+    flex-direction: column;
     gap: 6px;
-    background: rgba(255, 255, 255, 0.02);
-    border-radius: 8px;
+    background: #142a24;
+    border: 1px solid var(--border);
+    border-radius: 10px;
     padding: 8px 10px;
+    color: var(--muted);
+    font-weight: 700;
 }
 
-.bills-row strong {
+.bill-input input {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid transparent;
+    border-radius: 8px;
     color: var(--text);
+    padding: 6px 8px;
+    font-size: 1rem;
+    -moz-appearance: textfield;
+}
+
+.bill-input input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.2);
+}
+
+.bill-input input::-webkit-outer-spin-button,
+.bill-input input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
 }
 
 /* Footer */
