@@ -20,6 +20,7 @@ let resultsBody;
 let billsSummary;
 let ocrStatusEl;
 let ocrRawTextEl;
+let distributionDateEl;
 
 // Azure AI Vision API Configuration
 function getAzureConfig() {
@@ -39,6 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
     billsSummary = document.getElementById("bills-summary");
     ocrStatusEl = document.getElementById("ocr-status");
     ocrRawTextEl = document.getElementById("ocr-raw-text");
+    distributionDateEl = document.getElementById("distribution-date");
 
     const uploadInput = document.getElementById("image-upload");
     const parseTextBtn = document.getElementById("parse-text-btn");
@@ -826,7 +828,14 @@ function runCalculations() {
     });
 
     renderResultsTable(results);
-    renderSummary(hourlyRateTruncated, totalTipsVal, sumDecimalTips, sumWholeDollarPayout, totalsBills);
+    renderSummary(
+        hourlyRateTruncated,
+        totalTipsVal,
+        sumDecimalTips,
+        sumWholeDollarPayout,
+        totalsBills,
+        totalHours
+    );
 }
 
 function clearResults() {
@@ -850,19 +859,42 @@ function renderResultsTable(rows) {
     resultsBody.innerHTML = "";
 
     rows.forEach((r) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-      <td>${escapeHtml(r.name)}</td>
-      <td>${escapeHtml(r.number)}</td>
-      <td class="numeric">${r.hours.toFixed(2)}</td>
-      <td class="numeric">$${r.decimalTip.toFixed(2)}</td>
-      <td class="numeric">$${r.wholeDollarPayout.toFixed(0)}</td>
-      <td class="numeric">${r.breakdown.twenties}</td>
-      <td class="numeric">${r.breakdown.tens}</td>
-      <td class="numeric">${r.breakdown.fives}</td>
-      <td class="numeric">${r.breakdown.ones}</td>
+        const card = document.createElement("div");
+        card.className = "partner-card";
+        const safeName = escapeHtml(r.name || "Partner");
+        const safeNumber = escapeHtml(r.number || "—");
+
+        card.innerHTML = `
+      <div class="partner-header">
+        <div>
+          <div class="partner-name">${safeName}</div>
+          <div class="partner-number">#${safeNumber}</div>
+        </div>
+        <div class="payout-pill">$${r.wholeDollarPayout.toFixed(0)}</div>
+      </div>
+      <div class="partner-body">
+        <div class="metric">
+          <span class="label">Hours</span>
+          <strong>${r.hours.toFixed(2)}</strong>
+        </div>
+        <div class="metric">
+          <span class="label">Tips</span>
+          <strong>$${r.decimalTip.toFixed(2)}</strong>
+        </div>
+        <div class="metric">
+          <span class="label">Rounded Payout</span>
+          <strong>$${r.wholeDollarPayout.toFixed(0)}</strong>
+        </div>
+      </div>
+      <div class="bills-row">
+        <span>$20 <strong>${r.breakdown.twenties}</strong></span>
+        <span>$10 <strong>${r.breakdown.tens}</strong></span>
+        <span>$5 <strong>${r.breakdown.fives}</strong></span>
+        <span>$1 <strong>${r.breakdown.ones}</strong></span>
+      </div>
     `;
-        resultsBody.appendChild(tr);
+
+        resultsBody.appendChild(card);
     });
 
     // Show results section
@@ -876,19 +908,47 @@ function renderSummary(
     totalTipsVal,
     sumDecimalTips,
     sumWholeDollarPayout,
-    totalsBills
+    totalsBills,
+    totalHours
 ) {
     if (!billsSummary) return;
 
-    billsSummary.innerHTML = `
-    <p><strong>$${hourlyRateTruncated.toFixed(2)}</strong> per hour &bull; <strong>$${sumWholeDollarPayout.toFixed(0)}</strong> total payout</p>
-    <ul>
-      <li>$20<strong>${totalsBills.twenties}</strong></li>
-      <li>$10<strong>${totalsBills.tens}</strong></li>
-      <li>$5<strong>${totalsBills.fives}</strong></li>
-      <li>$1<strong>${totalsBills.ones}</strong></li>
-    </ul>
-  `;
+    const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.textContent = value;
+        }
+    };
+
+    const today = new Date();
+    if (distributionDateEl) {
+        distributionDateEl.textContent = today.toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+        });
+    }
+
+    setText("summary-hours", totalHours.toFixed(2));
+    setText("summary-hourly", `$${hourlyRateTruncated.toFixed(2)}`);
+    setText("summary-distributed", `$${sumWholeDollarPayout.toFixed(0)}`);
+    setText("summary-total-tips", `$${totalTipsVal.toFixed(2)}`);
+    setText("summary-total-hours", totalHours.toFixed(2));
+    setText("summary-hourly-inline", `$${hourlyRateTruncated.toFixed(2)}`);
+
+    billsSummary.innerHTML = [
+        { label: "$20", count: totalsBills.twenties },
+        { label: "$10", count: totalsBills.tens },
+        { label: "$5", count: totalsBills.fives },
+        { label: "$1", count: totalsBills.ones },
+    ]
+        .map((bill) => `
+        <div class="bill-chip">
+          <span class="label">${bill.label}</span>
+          <strong>${bill.count}</strong>
+        </div>
+      `)
+        .join("");
 }
 
 // ---------- SIMPLE HTML ESCAPING HELPERS ----------

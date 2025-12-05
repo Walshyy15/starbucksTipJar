@@ -37,96 +37,138 @@
 
         <!-- Main Content -->
         <main class="main-content">
-            <!-- Upload Section -->
-            <section class="card upload-card">
-                <div class="upload-icon">☁️</div>
-                <p class="upload-title">Upload your partner hours report</p>
-                <label class="upload-btn">
-                    <span>📤 Upload Report</span>
-                    <input id="image-upload" type="file" accept="image/*" capture="environment" />
-                </label>
-                <p class="upload-hint">Supported formats: PNG, JPG, JPEG, GIF</p>
-                <div id="ocr-status" class="ocr-status"></div>
-            </section>
+            <div class="grid two-column">
+                <!-- Upload Section -->
+                <section class="card upload-card">
+                    <div class="upload-icon">☁️</div>
+                    <p class="upload-title">Upload your partner hours report</p>
+                    <label class="upload-btn">
+                        <span>📤 Upload Report</span>
+                        <input id="image-upload" type="file" accept="image/*" capture="environment" />
+                    </label>
+                    <p class="upload-hint">Supported formats: PNG, JPG, JPEG, GIF</p>
+                    <div id="ocr-status" class="ocr-status"></div>
+                </section>
 
-            <!-- Partners Table -->
-            <section class="card partners-card" id="partners-section">
-                <div class="section-header">
-                    <h2>Partners</h2>
-                    <div class="header-actions">
-                        <button id="add-row-btn" type="button" class="btn-icon" title="Add Partner">+</button>
-                        <button id="clear-table-btn" type="button" class="btn-icon btn-icon-danger"
-                            title="Clear All">🗑️</button>
+                <!-- Partners Table -->
+                <section class="card partners-card" id="partners-section">
+                    <div class="section-header">
+                        <h2>Partners</h2>
+                        <div class="header-actions">
+                            <button id="add-row-btn" type="button" class="btn-icon" title="Add Partner">+</button>
+                            <button id="clear-table-btn" type="button" class="btn-icon btn-icon-danger" title="Clear All">🗑️</button>
+                        </div>
                     </div>
-                </div>
-                <div class="table-wrapper">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Partner #</th>
-                                <th>Hours</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody id="partner-table-body">
-                        </tbody>
-                    </table>
-                </div>
-                <div class="total-hours-row">
-                    <span>Total Hours:</span>
-                    <strong id="total-hours">0.00</strong>
-                </div>
-            </section>
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Partner #</th>
+                                    <th>Hours</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="partner-table-body">
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="total-hours-row">
+                        <span>Total Hours:</span>
+                        <strong id="total-hours">0.00</strong>
+                    </div>
+                </section>
+            </div>
 
             <!-- OCR Text (Collapsible) -->
             <details class="card ocr-details" id="ocr-details">
                 <summary>Edit OCR Text</summary>
-                <textarea id="ocr-raw-text" rows="4" spellcheck="false"
-                    placeholder="OCR text will appear here..."></textarea>
+                <textarea id="ocr-raw-text" rows="4" spellcheck="false" placeholder="OCR text will appear here..."></textarea>
                 <button id="parse-text-btn" type="button" class="btn btn-secondary">Parse Text</button>
             </details>
 
-            <!-- Total Tips Input -->
-            <section class="card tips-card">
-                <div class="tips-input-group">
-                    <label for="total-tips">💰 Total Tip Amount</label>
-                    <div class="input-wrapper">
-                        <span class="currency-symbol">$</span>
-                        <input id="total-tips" type="number" min="0" step="0.01" placeholder="0.00" />
+            <div class="grid two-column">
+                <!-- Total Tips Input -->
+                <section class="card tips-card">
+                    <div class="tips-input-group">
+                        <label for="total-tips">💰 Total Tip Amount</label>
+                        <div class="input-wrapper">
+                            <span class="currency-symbol">$</span>
+                            <input id="total-tips" type="number" min="0" step="0.01" placeholder="0.00" />
+                        </div>
                     </div>
-                </div>
-                <div id="hourly-rate-display" class="hourly-rate"></div>
-            </section>
+                    <div id="hourly-rate-display" class="hourly-rate"></div>
+                </section>
 
-            <!-- Calculate Button -->
-            <button id="calculate-btn" type="button" class="btn btn-primary btn-large">
-                🔒 Calculate Distribution
-            </button>
+                <section class="card action-card">
+                    <button id="calculate-btn" type="button" class="btn btn-primary btn-large full-width">
+                        🔒 Calculate Distribution
+                    </button>
+                    <p class="action-hint">Hourly rate is truncated to 2 decimals; payouts round up to the next dollar.</p>
+                </section>
+            </div>
 
             <!-- Results Section -->
             <section class="card results-card" id="results-section">
-                <h2>Distribution Summary</h2>
-                <div class="table-wrapper">
-                    <table class="data-table results-table">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Partner #</th>
-                                <th class="numeric">Hours</th>
-                                <th class="numeric">Tips</th>
-                                <th class="numeric">Payout</th>
-                                <th class="numeric">$20</th>
-                                <th class="numeric">$10</th>
-                                <th class="numeric">$5</th>
-                                <th class="numeric">$1</th>
-                            </tr>
-                        </thead>
-                        <tbody id="results-body">
-                        </tbody>
-                    </table>
+                <div class="section-header">
+                    <div class="title-group">
+                        <p class="eyebrow">Distribution Summary</p>
+                        <h2>Weekly Breakdown</h2>
+                    </div>
+                    <div class="pill" id="distribution-date"></div>
                 </div>
-                <div id="bills-summary" class="bills-summary"></div>
+
+                <div class="summary-grid">
+                    <div class="stat-card">
+                        <p class="label">Total Hours</p>
+                        <h3 id="summary-hours">0.00</h3>
+                    </div>
+                    <div class="stat-card">
+                        <p class="label">Hourly Rate</p>
+                        <h3 id="summary-hourly">$0.00</h3>
+                    </div>
+                    <div class="stat-card">
+                        <p class="label">Total Distributed</p>
+                        <h3 id="summary-distributed">$0.00</h3>
+                    </div>
+                </div>
+
+                <div class="details-grid">
+                    <div class="detail-card">
+                        <div class="detail-header">
+                            <span class="icon">🧮</span>
+                            <div>
+                                <p class="eyebrow">Calculation Details</p>
+                                <p class="detail-title">Formula</p>
+                            </div>
+                        </div>
+                        <div class="detail-row">
+                            <span>Total Tips:</span>
+                            <strong id="summary-total-tips">$0.00</strong>
+                        </div>
+                        <div class="detail-row">
+                            <span>Total Hours:</span>
+                            <strong id="summary-total-hours">0.00</strong>
+                        </div>
+                        <div class="detail-row">
+                            <span>Hourly Rate:</span>
+                            <strong id="summary-hourly-inline">$0.00</strong>
+                        </div>
+                    </div>
+
+                    <div class="detail-card">
+                        <div class="detail-header">
+                            <span class="icon">💵</span>
+                            <div>
+                                <p class="eyebrow">Total Bills Needed</p>
+                                <p class="detail-title">Denomination Breakdown</p>
+                            </div>
+                        </div>
+                        <div id="bills-summary" class="bill-chips"></div>
+                    </div>
+                </div>
+
+                <div class="partner-grid" id="results-body"></div>
             </section>
         </main>
 
