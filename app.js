@@ -23,6 +23,99 @@ const METADATA_PATTERNS = [
     /Home\s*Store[^\n]*/gi,
 ];
 
+// Set of metadata tokens for quick lookup during parsing
+const metadataTokens = new Set([
+    'store', 'number', 'time', 'period', 'executed', 'by', 'on', 'data',
+    'disclaimer', 'includes', 'all', 'updates', 'tip', 'distribution',
+    'home', 'partner', 'name', 'tippable', 'hours', 'total'
+]);
+
+/**
+ * Strip metadata tokens from OCR text to clean up parsing
+ * @param {string} text - Raw OCR text
+ * @returns {string} Cleaned text with metadata removed
+ */
+function stripMetadataTokens(text) {
+    if (!text || typeof text !== 'string') return '';
+
+    let cleaned = text;
+
+    // Apply all metadata patterns
+    for (const pattern of METADATA_PATTERNS) {
+        cleaned = cleaned.replace(pattern, ' ');
+    }
+
+    // Normalize whitespace
+    cleaned = cleaned.replace(/\s+/g, ' ').trim();
+
+    return cleaned;
+}
+
+/**
+ * Parse by splitting into potential partner entries using token buckets
+ * Fallback method when line-by-line parsing fails
+ */
+function parseByTokenBuckets(text, tokensToSkip) {
+    const entries = [];
+    if (!text) return entries;
+
+    // Split by common delimiters and look for patterns
+    const tokens = text.split(/\s+/);
+    let currentEntry = { nameTokens: [], number: '', hours: null };
+
+    for (let i = 0; i < tokens.length; i++) {
+        const token = tokens[i];
+
+        // Skip metadata tokens
+        const cleanedToken = token.toLowerCase().replace(/[^a-z]/g, '');
+        if (tokensToSkip && tokensToSkip.has(cleanedToken)) {
+            continue;
+        }
+
+        // Check if it's a partner number (US followed by digits or 6+ digits)
+        if (/^US\d+$/i.test(token) || /^\d{6,}$/.test(token)) {
+            currentEntry.number = token;
+            continue;
+        }
+
+        // Check if it's hours (decimal number between 0 and 200)
+        if (/^\d+\.\d+$/.test(token)) {
+            const hours = parseFloat(token);
+            if (hours > 0 && hours < 200) {
+                currentEntry.hours = hours;
+
+                // Complete this entry if we have a name
+                if (currentEntry.nameTokens.length > 0) {
+                    const name = currentEntry.nameTokens.join(' ').trim();
+                    if (name && name.length > 1 && !/^\d+$/.test(name)) {
+                        entries.push({
+                            name: name,
+                            number: currentEntry.number,
+                            hours: currentEntry.hours
+                        });
+                    }
+                }
+
+                // Reset for next entry
+                currentEntry = { nameTokens: [], number: '', hours: null };
+                continue;
+            }
+        }
+
+        // Skip 5-digit store numbers
+        if (/^\d{5}$/.test(token)) {
+            continue;
+        }
+
+        // Otherwise, it's likely a name token
+        if (token.length > 0 && !/^\d+$/.test(token)) {
+            currentEntry.nameTokens.push(token);
+        }
+    }
+
+    return entries;
+}
+
 // DOM references
 let partnerTableBody;
 let totalHoursSpan;
@@ -31,7 +124,6 @@ let hourlyRateDisplay;
 let resultsBody;
 let ocrStatusEl;
 let distributionDateEl;
-let billsSummary;
 
 // Azure AI Vision API Configuration
 function getAzureConfig() {
@@ -50,7 +142,6 @@ document.addEventListener("DOMContentLoaded", () => {
     resultsBody = document.getElementById("results-body");
     ocrStatusEl = document.getElementById("ocr-status");
     distributionDateEl = document.getElementById("distribution-date");
-    billsSummary = document.getElementById("bills-summary");
 
     const uploadInput = document.getElementById("image-upload");
     const addRowBtn = document.getElementById("add-row-btn");
@@ -334,82 +425,6 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function stripMetadataTokens(text) {
-    if (!text) return "";
-
-    let cleaned = text;
-    for (const pattern of METADATA_PATTERNS) {
-        cleaned = cleaned.replace(pattern, '');
-    }
-
-    return cleaned.replace(/\n{2,}/g, "\n").trim();
-}
-
-function parseByTokenBuckets(rawText, metadataTokens = new Set()) {
-    const tokens = rawText.split(/\s+/).filter(Boolean);
-    const headerTokens = new Set([
-        'home', 'store', 'partner', 'name', 'number', 'total', 'tippable', 'hours',
-        'time', 'period', 'report', 'tip', 'distribution', 'weekly', 'week', 'ending',
-        'executed', 'disclaimer', 'includes', 'updates', 'data'
-    ]);
-
-    const entries = [];
-    let bucket = [];
-
-    for (const token of tokens) {
-        const normalizedHoursToken = token.replace(/[^0-9.]/g, '');
-        bucket.push(token);
-
-        if (/^\d+\.?\d*$/.test(normalizedHoursToken)) {
-            const hours = parseFloat(normalizedHoursToken);
-
-            if (isFinite(hours) && hours > 0 && hours < 200) {
-                const candidateTokens = bucket.slice(0, -1);
-                let number = "";
-
-                if (candidateTokens.length > 0) {
-                    const lastToken = candidateTokens[candidateTokens.length - 1].replace(/[^A-Za-z0-9]/g, '');
-                    if (/^US\d+$/i.test(lastToken) || /^\d{6,}$/.test(lastToken)) {
-                        number = lastToken;
-                        candidateTokens.pop();
-                    }
-                }
-
-                if (candidateTokens.length > 0 && /^\d{5}$/.test(candidateTokens[0])) {
-                    candidateTokens.shift();
-                }
-
-                const filteredNameTokens = candidateTokens.filter((t) => {
-                    const cleaned = t.toLowerCase().replace(/[^a-z]/g, '');
-                    return cleaned && !headerTokens.has(cleaned) && cleaned.length > 1;
-                });
-
-                const metadataHits = filteredNameTokens.filter((token) => metadataTokens.has(token)).length;
-
-                const name = filteredNameTokens.join(" ").trim();
-
-                if (
-                    name &&
-                    filteredNameTokens.length > 0 &&
-                    filteredNameTokens.length <= 6 &&
-                    /[a-z]/i.test(name) &&
-                    metadataHits === 0
-                ) {
-                    entries.push({ name, number, hours });
-                }
-
-                bucket = [];
-            }
-        }
-
-        if (bucket.length > 20) {
-            bucket = bucket.slice(-10);
-        }
-    }
-
-    return entries;
-}
-
 async function handleImageUpload(event) {
     const fileInput = event?.target || document.getElementById("image-upload");
     const file = fileInput?.files?.[0];
@@ -492,14 +507,14 @@ function parseOcrToPartners(text) {
     const lines = metadataStrip.split(/\r?\n/);
     const parsed = [];
 
-    // Helper function to add entry to parsed array (for deduplication)
+    // Helper to add entry avoiding duplicates
     function addEntry(entry) {
-        // Check for duplicate (same name and similar hours)
-        const isDuplicate = parsed.some(p =>
-            p.name.toLowerCase() === entry.name.toLowerCase() &&
-            Math.abs(p.hours - entry.hours) < 0.01
+        if (!entry || !entry.name || entry.name.length < 2) return;
+        // Check for duplicate by name (case-insensitive)
+        const exists = parsed.some(p =>
+            p.name.toLowerCase().trim() === entry.name.toLowerCase().trim()
         );
-        if (!isDuplicate) {
+        if (!exists) {
             parsed.push(entry);
         }
     }
