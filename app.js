@@ -897,13 +897,14 @@ function runCalculations() {
         });
     });
 
-    renderResultsTable(results);
+    renderResultsTable(results, hourlyRateTruncated);
     renderSummary(
         hourlyRateTruncated,
         totalTipsVal,
         sumDecimalTips,
         sumWholeDollarPayout,
-        totalHours
+        totalHours,
+        totalsBills
     );
 }
 
@@ -919,7 +920,7 @@ function clearResults() {
 
 // ---------- RESULTS RENDERING ----------
 
-function renderResultsTable(rows) {
+function renderResultsTable(rows, hourlyRate) {
     const resultsSection = document.getElementById('results-section');
     if (!resultsBody) return;
     resultsBody.innerHTML = "";
@@ -928,44 +929,29 @@ function renderResultsTable(rows) {
         const card = document.createElement("div");
         card.className = "partner-card";
         const safeName = escapeHtml(r.name || "Partner");
-        const safeNumber = escapeHtml(r.number || "—");
+
+        // Build bill chips - only show denominations that are > 0
+        const chips = [];
+        if (r.breakdown.twenties > 0) chips.push(`${r.breakdown.twenties}×$20`);
+        if (r.breakdown.tens > 0) chips.push(`${r.breakdown.tens}×$10`);
+        if (r.breakdown.fives > 0) chips.push(`${r.breakdown.fives}×$5`);
+        if (r.breakdown.ones > 0) chips.push(`${r.breakdown.ones}×$1`);
+
+        const billChipsHtml = chips.map(c => `<span class="bill-chip">${c}</span>`).join('');
+
+        // Calculation formula: 9.22 × $1.37 = $12.63 → $13
+        const calcFormula = `${r.hours.toFixed(2)} × $${hourlyRate.toFixed(2)} = $${r.decimalTip.toFixed(2)} → $${r.wholeDollarPayout}`;
 
         card.innerHTML = `
       <div class="partner-header">
-        <div>
+        <div class="partner-info">
           <div class="partner-name">${safeName}</div>
-          <div class="partner-number">#${safeNumber}</div>
+          <div class="partner-hours">${r.hours.toFixed(2)} hours</div>
         </div>
-        <div class="payout-pill">$${r.wholeDollarPayout.toFixed(0)}</div>
+        <div class="payout-amount">$${r.wholeDollarPayout}</div>
       </div>
-      <div class="partner-body">
-        <div class="metric">
-          <span class="label">Hours</span>
-          <strong>${r.hours.toFixed(2)}</strong>
-        </div>
-        <div class="metric">
-          <span class="label">Tips</span>
-          <strong>$${r.decimalTip.toFixed(2)}</strong>
-        </div>
-        <div class="metric">
-          <span class="label">Rounded Payout</span>
-          <strong>$${r.wholeDollarPayout.toFixed(0)}</strong>
-        </div>
-      </div>
-      <div class="bills-row">
-        <label class="bill-input">$20
-          <input type="number" min="0" inputmode="numeric" value="${r.breakdown.twenties}" aria-label="${safeName} twenties" />
-        </label>
-        <label class="bill-input">$10
-          <input type="number" min="0" inputmode="numeric" value="${r.breakdown.tens}" aria-label="${safeName} tens" />
-        </label>
-        <label class="bill-input">$5
-          <input type="number" min="0" inputmode="numeric" value="${r.breakdown.fives}" aria-label="${safeName} fives" />
-        </label>
-        <label class="bill-input">$1
-          <input type="number" min="0" inputmode="numeric" value="${r.breakdown.ones}" aria-label="${safeName} ones" />
-        </label>
-      </div>
+      <div class="partner-calc">${calcFormula}</div>
+      <div class="bill-chips">${billChipsHtml}</div>
     `;
 
         resultsBody.appendChild(card);
@@ -982,22 +968,25 @@ function renderSummary(
     totalTipsVal,
     sumDecimalTips,
     sumWholeDollarPayout,
-    totalHours
+    totalHours,
+    totalsBills
 ) {
-    // Update summary stat cards
-    const summaryHours = document.getElementById('summary-hours');
-    const summaryHourly = document.getElementById('summary-hourly');
-    const summaryDistributed = document.getElementById('summary-distributed');
-    const summaryTotalTips = document.getElementById('summary-total-tips');
-    const summaryTotalHours = document.getElementById('summary-total-hours');
-    const summaryHourlyInline = document.getElementById('summary-hourly-inline');
+    // Update calc formula
+    const calcFormula = document.getElementById('calc-formula');
+    if (calcFormula) {
+        calcFormula.textContent = `Total Tips: $${totalTipsVal.toFixed(2)} ÷ Total Hours: ${totalHours.toFixed(2)} = $${hourlyRateTruncated.toFixed(2)} per hour`;
+    }
 
-    if (summaryHours) summaryHours.textContent = totalHours.toFixed(2);
-    if (summaryHourly) summaryHourly.textContent = `$${hourlyRateTruncated.toFixed(2)}`;
-    if (summaryDistributed) summaryDistributed.textContent = `$${sumWholeDollarPayout.toFixed(0)}`;
-    if (summaryTotalTips) summaryTotalTips.textContent = `$${totalTipsVal.toFixed(2)}`;
-    if (summaryTotalHours) summaryTotalHours.textContent = totalHours.toFixed(2);
-    if (summaryHourlyInline) summaryHourlyInline.textContent = `$${hourlyRateTruncated.toFixed(2)}`;
+    // Update bills needed list
+    const billsNeededList = document.getElementById('bills-needed-list');
+    if (billsNeededList) {
+        billsNeededList.innerHTML = `
+            <span class="count">${totalsBills.twenties}</span> <span class="denom">× $20</span>, 
+            <span class="count">${totalsBills.tens}</span> <span class="denom">× $10</span>, 
+            <span class="count">${totalsBills.fives}</span> <span class="denom">× $5</span>, 
+            <span class="count">${totalsBills.ones}</span> <span class="denom">× $1</span>
+        `;
+    }
 
     // Update distribution date
     if (distributionDateEl) {
