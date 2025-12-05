@@ -11,6 +11,18 @@
 let partners = []; // { id, name, number, hours }
 let nextPartnerId = 1;
 
+// Common tokens and headers that should be stripped from OCR output
+const METADATA_PATTERNS = [
+    /Store\s*Number[:#]?\s*\d+/gi,
+    /Time\s*Period:[^\n]*/gi,
+    /Executed\s*By:[^\n]*/gi,
+    /Executed\s*On:[^\n]*/gi,
+    /Data\s*Disclaimer[^\n]*/gi,
+    /Includes\s*all\s*updates[^\n]*/gi,
+    /Tip\s*Distribution[^\n]*/gi,
+    /Home\s*Store[^\n]*/gi,
+];
+
 // DOM references
 let partnerTableBody;
 let totalHoursSpan;
