@@ -4,7 +4,7 @@
 // - Builds a table of Partner Name / Number / Tippable Hours
 // - Computes truncated hourly rate, per-partner tips, and cash payouts
 // - Rounds hourly rate down to 2 decimals; then rounds partner tips to cents
-// - Finally rounds each partner's cash payout UP to the next whole dollar
+// - Finally rounds each partner's cash payout to the nearest whole dollar
 //   (e.g. $44.61 -> $45 as requested)
 // - Breaks payouts into $20/$10/$5/$1 bills and totals all bills needed
 
@@ -72,9 +72,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // ---------- OCR HANDLING ----------
 
-function setOcrStatus(message) {
-    if (ocrStatusEl) {
+function setOcrStatus(message, options = {}) {
+    if (!ocrStatusEl) return;
+
+    if (options.loading) {
+        const progressText = message ? `${message}` : '';
+        ocrStatusEl.innerHTML = `
+      <div class="ocr-loader">
+        <div class="ocr-spinner" aria-hidden="true"></div>
+        <div class="ocr-progress">${progressText}</div>
+      </div>
+    `;
+        ocrStatusEl.classList.add('is-loading');
+    } else {
         ocrStatusEl.textContent = message;
+        ocrStatusEl.classList.remove('is-loading');
     }
 }
 
@@ -169,7 +181,7 @@ async function callAzureVisionOCR(imageBase64) {
         await sleep(1000); // Wait 1 second between polls
         attempts++;
 
-        setOcrStatus(`Processing image... ${Math.min(attempts * 2, 95)}%`);
+        setOcrStatus(`${Math.min(attempts * 2, 95)}%`, { loading: true });
 
         const resultResponse = await fetch(operationLocation, {
             method: 'GET',
@@ -266,7 +278,7 @@ async function callComputerVisionOCR(imageBase64, config) {
     while (attempts < 30) {
         await sleep(1000);
         attempts++;
-        setOcrStatus(`Processing image... ${Math.min(attempts * 3, 95)}%`);
+        setOcrStatus(`${Math.min(attempts * 3, 95)}%`, { loading: true });
 
         const resultResponse = await fetch(operationLocation, {
             method: 'GET',
@@ -329,12 +341,12 @@ async function handleImageUpload(event) {
         return;
     }
 
-    setOcrStatus("Uploading image to Azure AI Vision... 0%");
+    setOcrStatus("Uploading image... 0%", { loading: true });
 
     try {
         // Convert file to base64
         const base64 = await fileToBase64(file);
-        setOcrStatus("Processing with Azure AI Vision... 10%");
+        setOcrStatus("Processing... 10%", { loading: true });
 
         // Call Azure Vision API
         const text = await callAzureVisionOCR(base64);
@@ -397,19 +409,6 @@ function parseOcrToPartners(text) {
 
     const lines = metadataStrip.split(/\r?\n/);
     const parsed = [];
-    const seen = new Set();
-
-    const metadataTokens = new Set([
-        'store', 'number', 'period', 'executed', 'disclaimer', 'includes', 'updates', 'report', 'time', 'data'
-    ]);
-
-    const addEntry = (entry) => {
-        if (!entry || !entry.name || !isFinite(entry.hours)) return;
-        const key = `${entry.name.toLowerCase()}|${(entry.number || "").toLowerCase()}|${entry.hours}`;
-        if (seen.has(key)) return;
-        seen.add(key);
-        parsed.push(entry);
-    };
 
     // Skip patterns - headers and metadata
     const skipPatterns = [
@@ -451,11 +450,24 @@ function parseOcrToPartners(text) {
             continue;
         }
 
-        console.log('Processing line:', line);
+        // Skip metadata lines that were merged into partner text
+        if (line.length > 120 && /(executed|time period|store number|data disclaimer)/i.test(line)) {
+            console.log('Skipping merged metadata line:', line);
+            continue;
+        }
+
+        const cleanedLine = stripMetadataTokens(line);
+
+        if (!cleanedLine || cleanedLine.length < 3) {
+            console.log('Line reduced to metadata only, skipping:', line);
+            continue;
+        }
+
+        console.log('Processing line:', cleanedLine);
 
         // Pattern 1: Full Starbucks format with 5-digit store number
         // "69600 Ailuogwemhe, Jodie O US37008498 9.22"
-        let match = line.match(/^(\d{5})\s+(.+?)\s+(US\d+)\s+(\d+\.?\d*)$/i);
+        let match = cleanedLine.match(/^(\d{5})\s+(.+?)\s+(US\d+)\s+(\d+\.?\d*)$/i);
         if (match) {
             const entry = { name: match[2].trim(), number: match[3], hours: parseFloat(match[4]) };
             console.log('Pattern 1 match:', entry);
@@ -467,7 +479,7 @@ function parseOcrToPartners(text) {
 
         // Pattern 2: Without store number, with US partner number
         // "Ailuogwemhe, Jodie O US37008498 9.22"
-        match = line.match(/^(.+?)\s+(US\d+)\s+(\d+\.?\d*)$/i);
+        match = cleanedLine.match(/^(.+?)\s+(US\d+)\s+(\d+\.?\d*)$/i);
         if (match) {
             const entry = { name: match[1].trim(), number: match[2], hours: parseFloat(match[3]) };
             console.log('Pattern 2 match:', entry);
@@ -479,7 +491,7 @@ function parseOcrToPartners(text) {
 
         // Pattern 3: Name with any numeric ID (6+ digits) and hours
         // "John Doe 1234567 32.56"  
-        match = line.match(/^(.+?)\s+(\d{6,})\s+(\d+\.?\d*)$/);
+        match = cleanedLine.match(/^(.+?)\s+(\d{6,})\s+(\d+\.?\d*)$/);
         if (match) {
             const entry = { name: match[1].trim(), number: match[2], hours: parseFloat(match[3]) };
             console.log('Pattern 3 match:', entry);
@@ -491,7 +503,7 @@ function parseOcrToPartners(text) {
 
         // Pattern 4: Just name and hours (decimal number at end)
         // "John Doe 32.56"
-        match = line.match(/^(.+?)\s+(\d+\.\d+)$/);
+        match = cleanedLine.match(/^(.+?)\s+(\d+\.\d+)$/);
         if (match) {
             const nameCandidate = match[1].trim();
             const hours = parseFloat(match[2]);
@@ -505,7 +517,7 @@ function parseOcrToPartners(text) {
         }
 
         // Pattern 5: Flexible token-based parsing
-        const tokens = line.split(/\s+/);
+        const tokens = cleanedLine.split(/\s+/);
         if (tokens.length >= 2) {
             const lastToken = tokens[tokens.length - 1];
 
@@ -557,71 +569,6 @@ function parseOcrToPartners(text) {
 
     console.log('Parsed results:', parsed);
     return parsed;
-
-    function parseByTokenBuckets(rawText) {
-        const tokens = rawText.split(/\s+/).filter(Boolean);
-        const headerTokens = new Set([
-            'home', 'store', 'partner', 'name', 'number', 'total', 'tippable', 'hours',
-            'time', 'period', 'report', 'tip', 'distribution', 'weekly', 'week', 'ending',
-            'executed', 'disclaimer', 'includes', 'updates', 'data'
-        ]);
-
-        const entries = [];
-        let bucket = [];
-
-        for (const token of tokens) {
-            const normalizedHoursToken = token.replace(/[^0-9.]/g, '');
-            bucket.push(token);
-
-            if (/^\d+\.?\d*$/.test(normalizedHoursToken)) {
-                const hours = parseFloat(normalizedHoursToken);
-
-                if (isFinite(hours) && hours > 0 && hours < 200) {
-                    const candidateTokens = bucket.slice(0, -1);
-                    let number = "";
-
-                    if (candidateTokens.length > 0) {
-                        const lastToken = candidateTokens[candidateTokens.length - 1].replace(/[^A-Za-z0-9]/g, '');
-                        if (/^US\d+$/i.test(lastToken) || /^\d{6,}$/.test(lastToken)) {
-                            number = lastToken;
-                            candidateTokens.pop();
-                        }
-                    }
-
-                    if (candidateTokens.length > 0 && /^\d{5}$/.test(candidateTokens[0])) {
-                        candidateTokens.shift();
-                    }
-
-                    const filteredNameTokens = candidateTokens.filter((t) => {
-                        const cleaned = t.toLowerCase().replace(/[^a-z]/g, '');
-                        return cleaned && !headerTokens.has(cleaned) && cleaned.length > 1;
-                    });
-
-                    const metadataHits = filteredNameTokens.filter((token) => metadataTokens.has(token)).length;
-
-                    const name = filteredNameTokens.join(" ").trim();
-
-                    if (
-                        name &&
-                        filteredNameTokens.length > 0 &&
-                        filteredNameTokens.length <= 6 &&
-                        /[a-z]/i.test(name) &&
-                        metadataHits === 0
-                    ) {
-                        entries.push({ name, number, hours });
-                    }
-
-                    bucket = [];
-                }
-            }
-
-            if (bucket.length > 20) {
-                bucket = bucket.slice(-10);
-            }
-        }
-
-        return entries;
-    }
 }
 
 // ---------- TABLE / PARTNER CRUD ----------
@@ -815,9 +762,9 @@ function runCalculations() {
         // Round to cents for decimal tip total
         const decimalTip = roundToTwoDecimals(rawTip);
 
-        // Final cash payout is rounded UP to the next whole dollar
-        // e.g. 44.61 => 45; 87.00 stays 87.
-        const wholeDollarPayout = decimalTip > 0 ? Math.ceil(decimalTip - 1e-8) : 0;
+        // Final cash payout is rounded to the nearest whole dollar
+        // e.g. 44.61 => 45; 44.40 => 44.
+        const wholeDollarPayout = decimalTip > 0 ? Math.round(decimalTip + 1e-8) : 0;
 
         const breakdown = breakdownBills(wholeDollarPayout);
 
@@ -923,30 +870,19 @@ function renderSummary(
     totalTipsVal,
     sumDecimalTips,
     sumWholeDollarPayout,
-    totalHours
+    totalsBills
 ) {
-    const setText = (id, value) => {
-        const el = document.getElementById(id);
-        if (el) {
-            el.textContent = value;
-        }
-    };
+    if (!billsSummary) return;
 
-    const today = new Date();
-    if (distributionDateEl) {
-        distributionDateEl.textContent = today.toLocaleDateString(undefined, {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-        });
-    }
-
-    setText("summary-hours", totalHours.toFixed(2));
-    setText("summary-hourly", `$${hourlyRateTruncated.toFixed(2)}`);
-    setText("summary-distributed", `$${sumWholeDollarPayout.toFixed(0)}`);
-    setText("summary-total-tips", `$${totalTipsVal.toFixed(2)}`);
-    setText("summary-total-hours", totalHours.toFixed(2));
-    setText("summary-hourly-inline", `$${hourlyRateTruncated.toFixed(2)}`);
+    billsSummary.innerHTML = `
+    <p><strong>$${hourlyRateTruncated.toFixed(2)}</strong> per hour &bull; <strong>$${sumWholeDollarPayout.toFixed(0)}</strong> total payout</p>
+    <ul>
+      <li>$20<strong>${totalsBills.twenties}</strong></li>
+      <li>$10<strong>${totalsBills.tens}</strong></li>
+      <li>$5<strong>${totalsBills.fives}</strong></li>
+      <li>$1<strong>${totalsBills.ones}</strong></li>
+    </ul>
+  `;
 }
 
 // ---------- SIMPLE HTML ESCAPING HELPERS ----------
