@@ -221,8 +221,9 @@ function fileToBase64(file) {
 }
 
 /**
- * Call Azure Document Intelligence (Form Recognizer) Read API
- * Uses the prebuilt-read model for document text extraction
+ * Call Azure Document Intelligence (Form Recognizer) Layout API
+ * Uses the prebuilt-layout model for table extraction from documents
+ * This provides structured table data with cells for better accuracy
  */
 async function callAzureVisionOCR(imageBase64) {
     const config = getAzureConfig();
@@ -238,21 +239,11 @@ async function callAzureVisionOCR(imageBase64) {
     // Ensure endpoint doesn't have trailing slash
     const endpoint = config.endpoint.replace(/\/$/, '');
 
-    // Try Document Intelligence API first, fall back to Computer Vision
-    let analyzeUrl;
-    let isDocIntelligence = false;
+    // Use Document Intelligence prebuilt-layout model for table extraction
+    // This provides better structured data for tip distribution reports
+    const analyzeUrl = `${endpoint}/documentintelligence/documentModels/prebuilt-layout:analyze?api-version=2024-11-30`;
 
-    // Check if endpoint looks like Document Intelligence (formrecognizer or documentintelligence)
-    if (endpoint.includes('cognitiveservices') && !endpoint.includes('vision')) {
-        // Document Intelligence endpoint
-        analyzeUrl = `${endpoint}/formrecognizer/documentModels/prebuilt-read:analyze?api-version=2023-07-31`;
-        isDocIntelligence = true;
-    } else {
-        // Try Computer Vision endpoint
-        analyzeUrl = `${endpoint}/vision/v3.2/read/analyze`;
-    }
-
-    console.log('Using API:', analyzeUrl);
+    console.log('Using Document Intelligence Layout API:', analyzeUrl);
 
     // Step 1: Submit the image for analysis
     const submitResponse = await fetch(analyzeUrl, {
@@ -268,13 +259,9 @@ async function callAzureVisionOCR(imageBase64) {
         const errorText = await submitResponse.text();
         console.error('Azure API Error:', errorText);
 
-        // If Document Intelligence failed, try Computer Vision
-        if (isDocIntelligence) {
-            console.log('Trying Computer Vision API as fallback...');
-            return await callComputerVisionOCR(imageBase64, config);
-        }
-
-        throw new Error(`Azure API error: ${submitResponse.status} - ${submitResponse.statusText}`);
+        // Try fallback URL format for older API versions
+        console.log('Trying alternative API format...');
+        return await callAzureLayoutFallback(imageBase64, config);
     }
 
     // Step 2: Get the operation location from headers
@@ -324,18 +311,34 @@ async function callAzureVisionOCR(imageBase64) {
         throw new Error("Timeout waiting for Azure results");
     }
 
-    // Extract text from results - handle both API response formats
+    // Check for table data in the results (prebuilt-layout extracts tables)
+    const analyzeResult = result.analyzeResult;
+
+    if (analyzeResult && analyzeResult.tables && analyzeResult.tables.length > 0) {
+        console.log('Found tables in document:', analyzeResult.tables.length);
+
+        // Extract partner data from tables
+        const partners = extractPartnersFromTables(analyzeResult.tables);
+
+        if (partners.length > 0) {
+            console.log('Extracted partners from tables:', partners);
+            // Return as special format that parseOcrToPartners can handle
+            return { type: 'table_data', partners: partners };
+        }
+    }
+
+    // Fallback to text extraction if no tables found
     const lines = [];
 
-    // Document Intelligence format
-    if (result.analyzeResult && result.analyzeResult.content) {
-        console.log('Raw content:', result.analyzeResult.content);
-        return result.analyzeResult.content;
+    // Document Intelligence content format
+    if (analyzeResult && analyzeResult.content) {
+        console.log('Raw content:', analyzeResult.content);
+        return analyzeResult.content;
     }
 
     // Document Intelligence pages format
-    if (result.analyzeResult && result.analyzeResult.pages) {
-        for (const page of result.analyzeResult.pages) {
+    if (analyzeResult && analyzeResult.pages) {
+        for (const page of analyzeResult.pages) {
             for (const line of page.lines || []) {
                 lines.push(line.content || line.text);
             }
@@ -346,18 +349,154 @@ async function callAzureVisionOCR(imageBase64) {
         }
     }
 
-    // Computer Vision format
-    if (result.analyzeResult && result.analyzeResult.readResults) {
-        for (const page of result.analyzeResult.readResults) {
-            for (const line of page.lines || []) {
-                lines.push(line.text);
+    console.log('Full result:', JSON.stringify(result, null, 2));
+    return lines.join('\n');
+}
+
+/**
+ * Extract partner data from Document Intelligence table cells
+ * Expected columns: Home Store, Partner Name, Partner Number, Total Tippable Hours
+ */
+function extractPartnersFromTables(tables) {
+    const partners = [];
+
+    for (const table of tables) {
+        const rows = [];
+
+        // Group cells by row
+        for (const cell of table.cells || []) {
+            const rowIndex = cell.rowIndex;
+            const colIndex = cell.columnIndex;
+
+            // Skip header row (rowIndex 0)
+            if (rowIndex === 0) continue;
+
+            if (!rows[rowIndex]) {
+                rows[rowIndex] = {};
+            }
+
+            const content = (cell.content || '').trim();
+
+            // Map columns based on expected Starbucks Tip Distribution Report format
+            switch (colIndex) {
+                case 0:
+                    rows[rowIndex].store = content;
+                    break;
+                case 1:
+                    rows[rowIndex].partnerName = content;
+                    break;
+                case 2:
+                    rows[rowIndex].partnerNumber = content;
+                    break;
+                case 3:
+                    rows[rowIndex].tippableHours = parseFloat(content) || 0;
+                    break;
             }
         }
-        console.log('Extracted lines:', lines);
-        return lines.join('\n');
+
+        // Filter out invalid rows (e.g., "Total Tippable" row)
+        for (const row of rows) {
+            if (!row) continue;
+
+            const name = row.partnerName || '';
+
+            // Skip if name contains "total" (footer row)
+            if (name.toLowerCase().includes('total tippable') ||
+                name.toLowerCase().includes('total:')) {
+                continue;
+            }
+
+            // Skip empty names
+            if (!name || name.length < 2) continue;
+
+            partners.push({
+                name: name,
+                number: row.partnerNumber || '',
+                hours: row.tippableHours || 0,
+                store: row.store || ''
+            });
+        }
     }
 
-    console.log('Full result:', JSON.stringify(result, null, 2));
+    return partners;
+}
+
+/**
+ * Fallback: Try alternative API URL format for Document Intelligence
+ */
+async function callAzureLayoutFallback(imageBase64, config) {
+    const endpoint = config.endpoint.replace(/\/$/, '');
+
+    // Try formrecognizer path (older format)
+    const analyzeUrl = `${endpoint}/formrecognizer/documentModels/prebuilt-layout:analyze?api-version=2023-07-31`;
+
+    console.log('Trying fallback URL:', analyzeUrl);
+
+    const submitResponse = await fetch(analyzeUrl, {
+        method: 'POST',
+        headers: {
+            'Ocp-Apim-Subscription-Key': config.apiKey,
+            'Content-Type': 'application/octet-stream'
+        },
+        body: base64ToArrayBuffer(imageBase64)
+    });
+
+    if (!submitResponse.ok) {
+        const errorText = await submitResponse.text();
+        console.error('Fallback API Error:', errorText);
+
+        // Try Computer Vision as last resort
+        console.log('Trying Computer Vision API as last resort...');
+        return await callComputerVisionOCR(imageBase64, config);
+    }
+
+    const operationLocation = submitResponse.headers.get('Operation-Location') ||
+        submitResponse.headers.get('operation-location');
+    if (!operationLocation) {
+        throw new Error("No operation location returned from Azure");
+    }
+
+    let result = null;
+    let attempts = 0;
+
+    while (attempts < 60) {
+        await sleep(1000);
+        attempts++;
+        setOcrStatus(`${Math.min(attempts * 2, 95)}%`, { loading: true });
+
+        const resultResponse = await fetch(operationLocation, {
+            method: 'GET',
+            headers: { 'Ocp-Apim-Subscription-Key': config.apiKey }
+        });
+
+        result = await resultResponse.json();
+        if (result.status === 'succeeded' || result.status === 'completed') break;
+        if (result.status === 'failed') throw new Error("Analysis failed");
+    }
+
+    const analyzeResult = result.analyzeResult;
+
+    // Check for tables
+    if (analyzeResult && analyzeResult.tables && analyzeResult.tables.length > 0) {
+        const partners = extractPartnersFromTables(analyzeResult.tables);
+        if (partners.length > 0) {
+            return { type: 'table_data', partners: partners };
+        }
+    }
+
+    // Fallback to text
+    if (analyzeResult && analyzeResult.content) {
+        return analyzeResult.content;
+    }
+
+    const lines = [];
+    if (analyzeResult && analyzeResult.pages) {
+        for (const page of analyzeResult.pages) {
+            for (const line of page.lines || []) {
+                lines.push(line.content || line.text);
+            }
+        }
+    }
     return lines.join('\n');
 }
 
@@ -460,21 +599,34 @@ async function handleImageUpload(event) {
     try {
         // Convert file to base64
         const base64 = await fileToBase64(file);
-        setOcrStatus("Processing... 10%", { loading: true });
+        setOcrStatus("Processing with Document Intelligence... 10%", { loading: true });
 
-        // Call Azure Vision API
-        const text = await callAzureVisionOCR(base64);
+        // Call Azure Vision API (now uses prebuilt-layout for table extraction)
+        const result = await callAzureVisionOCR(base64);
 
-        const normalizedText = (() => {
-            if (typeof text === "string") return text;
-            if (Array.isArray(text)) return text.join("\n");
-            if (text == null) return "";
-            return String(text);
-        })();
+        let parsed = [];
 
-        const cleanedText = normalizedText.trim();
+        // Check if we got structured table data (from prebuilt-layout)
+        if (result && typeof result === 'object' && result.type === 'table_data') {
+            // Direct table extraction - partners are already parsed
+            console.log('Using table data extraction, partners:', result.partners);
+            parsed = result.partners.filter(p =>
+                p && p.name && p.name.length > 1 &&
+                !p.name.toLowerCase().includes('total') &&
+                p.hours > 0
+            );
+        } else {
+            // Fallback: Text-based OCR parsing
+            const normalizedText = (() => {
+                if (typeof result === "string") return result;
+                if (Array.isArray(result)) return result.join("\n");
+                if (result == null) return "";
+                return String(result);
+            })();
 
-        const parsed = parseOcrToPartners(cleanedText);
+            const cleanedText = normalizedText.trim();
+            parsed = parseOcrToPartners(cleanedText);
+        }
 
         if (parsed.length === 0) {
             setOcrStatus(
@@ -486,176 +638,31 @@ async function handleImageUpload(event) {
         partners = parsed.map((p) => ({
             id: nextPartnerId++,
             name: p.name,
-            number: p.number,
-            hours: p.hours,
+            number: p.number || '',
+            hours: p.hours || 0,
         }));
 
         renderPartnerTable();
         updateTotalHours();
         clearResults();
-        setOcrStatus(`OCR complete. Loaded ${partners.length} partners. Review and adjust as needed.`);
+        setOcrStatus(`OCR complete. Loaded ${partners.length} partners from table. Review and adjust as needed.`);
     } catch (err) {
         console.error(err);
         setOcrStatus(`Error: ${err.message}. You can still type data manually.`);
     }
 }
 
-/**
- * Parse the columnar format from Azure Document Intelligence OCR
- * This handles the case where each cell value appears on a separate line:
- * Store (header)
- * 69600 (store value)
- * Ailuogwemhe, Jodie O (name)
- * US37008498 (partner number)
- * 18.48 (hours)
- * ... repeating for each row
- */
-function parseColumnarFormat(text) {
-    const entries = [];
-    if (!text) return entries;
-
-    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
-    console.log('Columnar parsing - all lines:', lines);
-
-    // Skip patterns for header lines
-    const headerPatterns = [
-        /^home$/i,
-        /^partner\s*name$/i,
-        /^partner\s*number$/i,
-        /^total\s*tippable\s*hours$/i,
-        /^store$/i,
-        /^total\s*tippable\s*hours:$/i,
-    ];
-
-    // Summary line pattern (e.g., "Total Tippable Hours: 278.31")
-    const summaryPattern = /^total\s*tippable\s*hours:\s*[\d.]+$/i;
-
-    // Find where the data starts by looking for the first 5-digit store number after headers
-    let dataStartIndex = 0;
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        // Check if this looks like a header
-        const isHeader = headerPatterns.some(p => p.test(line));
-        if (!isHeader && /^\d{5}$/.test(line)) {
-            dataStartIndex = i;
-            break;
-        }
-    }
-
-    console.log('Data starts at index:', dataStartIndex);
-
-    // Now extract data - expecting pattern: StoreNum, Name, PartnerNum, Hours
-    // Each partner should have these 4 values on consecutive lines
-    let i = dataStartIndex;
-    while (i < lines.length) {
-        const line = lines[i];
-
-        // Stop if we hit a summary line
-        if (summaryPattern.test(line)) {
-            console.log('Hit summary line, stopping:', line);
-            break;
-        }
-
-        // Skip any remaining header lines in the data section
-        if (headerPatterns.some(p => p.test(line))) {
-            i++;
-            continue;
-        }
-
-        // Expect: 5-digit store number
-        if (/^\d{5}$/.test(line)) {
-            const storeNum = line;
-
-            // Look for the next 3 lines: Name, Partner Number, Hours
-            if (i + 3 < lines.length) {
-                const nameLine = lines[i + 1];
-                const partnerNumLine = lines[i + 2];
-                const hoursLine = lines[i + 3];
-
-                console.log(`Checking group at ${i}: store=${storeNum}, name=${nameLine}, partnerNum=${partnerNumLine}, hours=${hoursLine}`);
-
-                // Validate the pattern
-                const isValidName = nameLine &&
-                    nameLine.length > 1 &&
-                    !/^\d+$/.test(nameLine) &&
-                    !/^US\d+$/i.test(nameLine) &&
-                    !headerPatterns.some(p => p.test(nameLine));
-
-                const isValidPartnerNum = /^US\d+$/i.test(partnerNumLine) || /^\d{6,}$/.test(partnerNumLine);
-                const isValidHours = /^\d+\.?\d*$/.test(hoursLine);
-
-                if (isValidName && isValidPartnerNum && isValidHours) {
-                    const hours = parseFloat(hoursLine);
-                    if (isFinite(hours) && hours > 0 && hours < 200) {
-                        entries.push({
-                            name: nameLine.trim(),
-                            number: partnerNumLine,
-                            hours: hours
-                        });
-                        console.log('Added entry:', entries[entries.length - 1]);
-                    }
-                    i += 4; // Move to next group
-                    continue;
-                }
-            }
-        }
-
-        // Alternative pattern: Name, Partner Number, Hours (without store number on each row)
-        // This handles formats where store number appears once at the beginning
-        const isName = line.length > 2 &&
-            !/^\d+\.?\d*$/.test(line) &&
-            !/^US\d+$/i.test(line) &&
-            !/^\d{5}$/.test(line) &&
-            !headerPatterns.some(p => p.test(line)) &&
-            !summaryPattern.test(line);
-
-        if (isName && i + 2 < lines.length) {
-            const partnerNumLine = lines[i + 1];
-            const hoursLine = lines[i + 2];
-
-            const isValidPartnerNum = /^US\d+$/i.test(partnerNumLine) || /^\d{6,}$/.test(partnerNumLine);
-            const isValidHours = /^\d+\.?\d*$/.test(hoursLine);
-
-            if (isValidPartnerNum && isValidHours) {
-                const hours = parseFloat(hoursLine);
-                if (isFinite(hours) && hours > 0 && hours < 200) {
-                    entries.push({
-                        name: line.trim(),
-                        number: partnerNumLine,
-                        hours: hours
-                    });
-                    console.log('Added entry (alt pattern):', entries[entries.length - 1]);
-                    i += 3; // Move to next group
-                    continue;
-                }
-            }
-        }
-
-        i++; // Move to next line if no pattern matched
-    }
-
-    console.log('Columnar parse found entries:', entries);
-    return entries;
-}
 
 /**
  * Parser for Starbucks Tip Distribution Report format.
  * Handles multiple variations of OCR output including:
- * - Columnar format: Each field (store, name, number, hours) on separate lines
- * - "69600 Ailuogwemhe, Jodie O US37008498 9.22" (full format on single line)
+ * - "69600 Ailuogwemhe, Jodie O US37008498 9.22" (full format)
  * - "Ailuogwemhe, Jodie O US37008498 9.22" (without store)
  * - "Name 32.56" (simple format)
  * - Table cell data extracted separately
  */
 function parseOcrToPartners(text) {
     console.log('Parsing OCR text:', text);
-
-    // First, try columnar parsing for Azure Document Intelligence format
-    const columnarResult = parseColumnarFormat(text);
-    if (columnarResult.length > 0) {
-        console.log('Columnar parsing succeeded:', columnarResult);
-        return columnarResult;
-    }
 
     const metadataStrip = stripMetadataTokens(text);
 
