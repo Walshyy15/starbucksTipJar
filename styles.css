@@ -781,33 +781,731 @@ body {
     height: 12px;
 }
 
-/* Responsive */
+/* ============================================
+   RESPONSIVE DESIGN - Mobile First Approach
+   ============================================ */
+
+/* Tablet Breakpoint (768px) */
 @media (max-width: 768px) {
+    html {
+        font-size: 14px;
+    }
+
     body {
         padding: 12px;
+        padding-bottom: env(safe-area-inset-bottom, 12px);
+    }
+
+    .app-container {
+        gap: 16px;
     }
 
     .card {
-        padding: 12px;
+        padding: 14px;
+        border-radius: var(--radius-md);
     }
 
     .header {
         flex-wrap: wrap;
         gap: 8px;
+        padding: 8px 0;
+    }
+
+    .logo {
+        padding: 8px 14px;
+    }
+
+    .logo-text {
+        font-size: 1.1rem;
+    }
+
+    .main-content {
+        gap: 16px;
+    }
+
+    .grid {
+        gap: 12px;
     }
 
     .status-badge {
         display: none;
     }
+
+    /* Upload Card - Tablet */
+    .upload-card {
+        padding: 20px 14px;
+    }
+
+    .upload-icon {
+        width: 64px;
+        height: 64px;
+    }
+
+    .upload-icon svg {
+        width: 32px;
+        height: 32px;
+    }
+
+    /* Table adjustments */
+    .data-table {
+        min-width: 100%;
+    }
+
+    .data-table th,
+    .data-table td {
+        padding: 10px 8px;
+    }
+
+    /* Larger touch targets for inputs */
+    .cell-input {
+        padding: 8px 6px;
+        font-size: 0.9rem;
+    }
+
+    /* Partner grid - single column on tablet landscape */
+    .partner-grid {
+        gap: 10px;
+    }
+
+    /* Bills needed - wrap better */
+    .bills-needed-list {
+        gap: 10px;
+    }
+
+    .bill-edit input {
+        width: 52px;
+        padding: 6px 8px;
+    }
+
+    /* Footer */
+    .footer {
+        padding: 12px 0;
+    }
 }
 
-@media (max-width: 480px) {
-    .grid.two-column {
+/* Mobile Breakpoint (600px) */
+@media (max-width: 600px) {
+    html {
+        font-size: 15px;
+    }
+
+    body {
+        padding: 10px;
+        padding-top: env(safe-area-inset-top, 10px);
+        padding-bottom: env(safe-area-inset-bottom, 10px);
+    }
+
+    .app-container {
+        gap: 14px;
+    }
+
+    /* Header - Centered and compact */
+    .header {
+        padding: 6px 0;
+    }
+
+    .logo {
+        padding: 8px 16px;
+    }
+
+    .logo-text {
+        font-size: 1.15rem;
+    }
+
+    /* Cards - Full width stacking */
+    .grid.two-column,
+    .grid.three-column {
         grid-template-columns: 1fr;
     }
 
+    .card {
+        padding: 16px;
+    }
+
+    /* Upload Card - Optimized for mobile */
+    .upload-card {
+        padding: 24px 16px;
+    }
+
+    .upload-icon {
+        width: 72px;
+        height: 72px;
+        margin-bottom: 14px;
+    }
+
+    .upload-icon svg {
+        width: 36px;
+        height: 36px;
+    }
+
+    .upload-title {
+        font-size: 0.95rem;
+        margin-bottom: 16px;
+    }
+
+    .upload-btn {
+        padding: 12px 28px;
+        font-size: 0.95rem;
+        /* Larger touch target on mobile */
+        min-height: 48px;
+    }
+
+    .upload-hint {
+        margin-top: 12px;
+    }
+
+    .ocr-status {
+        margin-top: 14px;
+        font-size: 0.85rem;
+    }
+
+    /* Partners Card - Mobile optimized */
+    .partners-card {
+        padding: 14px;
+    }
+
+    .section-header {
+        margin-bottom: 14px;
+    }
+
+    .section-header h2 {
+        font-size: 1rem;
+    }
+
+    /* Header action buttons - larger touch targets */
+    .btn-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+    }
+
+    .btn-icon svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    /* Table wrapper - horizontal scroll with momentum */
+    .table-wrapper {
+        margin: 0 -16px;
+        padding: 0 16px;
+        -webkit-overflow-scrolling: touch;
+        scroll-behavior: smooth;
+    }
+
     .data-table {
-        min-width: 360px;
+        min-width: 340px;
+    }
+
+    .data-table th {
+        font-size: 0.72rem;
+        padding: 10px 6px;
+        white-space: nowrap;
+    }
+
+    .data-table td {
+        padding: 12px 6px;
+    }
+
+    /* Cell inputs - larger for touch */
+    .cell-input {
+        padding: 10px 8px;
+        font-size: 1rem;
+        min-height: 44px;
+    }
+
+    /* Delete button - larger touch target */
+    .icon-button {
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+    }
+
+    .icon-button svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    /* Total hours row */
+    .total-hours-row {
+        padding-top: 12px;
+        margin-top: 8px;
+        font-size: 0.95rem;
+    }
+
+    .total-hours-row strong {
+        font-size: 1.05rem;
+    }
+
+    /* Tips Card - Mobile */
+    .tips-card {
+        padding: 16px;
+    }
+
+    .tips-input-group label {
+        font-size: 0.95rem;
+        margin-bottom: 10px;
+    }
+
+    .tips-input-group label svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .input-wrapper {
+        border-radius: 12px;
+        padding: 0 14px;
+    }
+
+    .currency-symbol {
+        font-size: 1.4rem;
+    }
+
+    .input-wrapper input {
+        font-size: 1.6rem;
+        padding: 12px 0 12px 6px;
+        min-height: 52px;
+    }
+
+    .hourly-rate {
+        font-size: 0.85rem;
+        margin-top: 8px;
+    }
+
+    /* Action Card & Button */
+    .action-card {
+        padding: 16px;
+        gap: 12px;
+    }
+
+    .btn {
+        padding: 14px 20px;
+        font-size: 1rem;
+        min-height: 52px;
+    }
+
+    .btn svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .btn-large {
+        padding: 16px 20px;
+        border-radius: 14px;
+    }
+
+    .action-hint {
+        font-size: 0.8rem;
+    }
+
+    /* Results Card - Mobile */
+    .results-card {
+        padding: 16px;
+    }
+
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .title-group h2 {
+        font-size: 1.1rem;
+    }
+
+    .eyebrow {
+        font-size: 0.7rem;
+    }
+
+    .pill {
+        font-size: 0.75rem;
+        padding: 5px 12px;
+    }
+
+    /* Calculation Summary */
+    .calc-summary {
+        padding: 14px;
+    }
+
+    .calc-summary-title {
+        font-size: 1rem;
+    }
+
+    .calc-formula {
+        font-size: 0.9rem;
+        line-height: 1.6;
+    }
+
+    .bills-needed {
+        padding: 12px;
+    }
+
+    .bills-needed-title {
+        font-size: 0.8rem;
+        flex-wrap: wrap;
+    }
+
+    .bills-hint {
+        font-size: 0.72rem;
+    }
+
+    .bills-needed-list {
+        gap: 8px;
+        justify-content: space-between;
+    }
+
+    .bill-edit {
+        font-size: 0.9rem;
+        flex: 1 1 45%;
+    }
+
+    .bill-edit input {
+        width: 56px;
+        padding: 8px 10px;
+        font-size: 1rem;
+        min-height: 40px;
+    }
+
+    /* Partner Grid - Single column */
+    .partner-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .partner-card {
+        padding: 14px 16px;
+        gap: 10px;
+    }
+
+    .partner-name {
+        font-size: 1rem;
+    }
+
+    .partner-hours {
+        font-size: 0.85rem;
+    }
+
+    .payout-amount {
+        font-size: 1.4rem;
+    }
+
+    .partner-calc {
+        padding: 10px 12px;
+        font-size: 0.85rem;
+    }
+
+    .bill-chips {
+        gap: 8px;
+    }
+
+    .bill-chip {
+        padding: 6px 10px;
+        font-size: 0.8rem;
+    }
+
+    /* Footer */
+    .footer {
+        padding: 16px 0 8px;
+        font-size: 0.85rem;
+    }
+
+    .store-info {
+        font-size: 0.8rem;
+        margin-top: 4px;
+    }
+
+    .store-info svg {
+        width: 14px;
+        height: 14px;
+    }
+}
+
+/* Small Mobile Breakpoint (400px) - iPhone SE, small Androids */
+@media (max-width: 400px) {
+    html {
+        font-size: 14px;
+    }
+
+    body {
+        padding: 8px;
+    }
+
+    .app-container {
+        gap: 12px;
+    }
+
+    .card {
+        padding: 12px;
+        border-radius: 12px;
+    }
+
+    /* Compact header */
+    .logo {
+        padding: 6px 12px;
+    }
+
+    .logo-text {
+        font-size: 1rem;
+    }
+
+    /* Upload card adjustments */
+    .upload-card {
+        padding: 20px 12px;
+    }
+
+    .upload-icon {
+        width: 60px;
+        height: 60px;
+    }
+
+    .upload-icon svg {
+        width: 28px;
+        height: 28px;
+    }
+
+    .upload-title {
+        font-size: 0.9rem;
+    }
+
+    .upload-btn {
+        padding: 10px 24px;
+        font-size: 0.9rem;
+    }
+
+    /* Table - Very compact */
+    .table-wrapper {
+        margin: 0 -12px;
+        padding: 0 12px;
+    }
+
+    .data-table {
+        min-width: 300px;
+    }
+
+    .data-table th {
+        font-size: 0.68rem;
+        padding: 8px 4px;
+    }
+
+    .data-table td {
+        padding: 10px 4px;
+    }
+
+    .cell-input {
+        padding: 8px 4px;
+        font-size: 0.9rem;
+    }
+
+    /* Tips input */
+    .input-wrapper input {
+        font-size: 1.4rem;
+    }
+
+    .currency-symbol {
+        font-size: 1.2rem;
+    }
+
+    /* Bills - 2x2 grid */
+    .bills-needed-list {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .bill-edit {
+        flex: unset;
+        justify-content: center;
+    }
+
+    .bill-edit input {
+        width: 48px;
+    }
+
+    /* Partner cards */
+    .partner-card {
+        padding: 12px;
+    }
+
+    .partner-name {
+        font-size: 0.95rem;
+    }
+
+    .payout-amount {
+        font-size: 1.25rem;
+    }
+
+    .partner-calc {
+        font-size: 0.8rem;
+        padding: 8px;
+    }
+
+    .bill-chip {
+        padding: 4px 8px;
+        font-size: 0.75rem;
+    }
+}
+
+/* Landscape mode on mobile */
+@media (max-width: 900px) and (orientation: landscape) {
+    body {
+        padding: 10px 16px;
+    }
+
+    .app-container {
+        max-width: 100%;
+    }
+
+    /* Allow side-by-side on landscape */
+    .grid.two-column {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .partner-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* Reduce vertical padding */
+    .card {
+        padding: 12px;
+    }
+
+    .upload-card {
+        padding: 16px;
+    }
+
+    .upload-icon {
+        width: 48px;
+        height: 48px;
+        margin-bottom: 8px;
+    }
+
+    .upload-icon svg {
+        width: 24px;
+        height: 24px;
+    }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+    /* Larger touch targets */
+    .btn,
+    .btn-icon,
+    .upload-btn,
+    .icon-button {
+        min-height: 44px;
+    }
+
+    .cell-input {
+        min-height: 44px;
+    }
+
+    /* Remove hover effects that don't work well on touch */
+    .btn-primary:hover {
+        transform: none;
+    }
+
+    .upload-btn:hover {
+        background: rgba(74, 222, 128, 0.14);
+        color: var(--accent);
+    }
+
+    /* Add active states for touch feedback */
+    .btn:active {
+        transform: scale(0.98);
+        opacity: 0.9;
+    }
+
+    .upload-btn:active {
+        background: var(--accent);
+        color: #0f201c;
+    }
+
+    .btn-icon:active {
+        transform: scale(0.95);
+    }
+
+    .icon-button:active {
+        transform: scale(0.95);
+    }
+
+    /* Improve scrolling */
+    .table-wrapper {
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* High DPI / Retina displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .card {
+        border-width: 0.5px;
+    }
+
+    .data-table th,
+    .data-table td {
+        border-width: 0.5px;
+    }
+}
+
+/* iOS safe area handling */
+@supports (padding: max(0px)) {
+    body {
+        padding-left: max(10px, env(safe-area-inset-left));
+        padding-right: max(10px, env(safe-area-inset-right));
+        padding-bottom: max(10px, env(safe-area-inset-bottom));
+    }
+}
+
+/* Dark mode preference (already dark, but ensure consistency) */
+@media (prefers-color-scheme: dark) {
+    :root {
+        color-scheme: dark;
+    }
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    .ocr-spinner {
+        animation: none;
+        border-top-color: var(--accent);
+        border-right-color: var(--accent);
+    }
+}
+
+/* Print styles */
+@media print {
+    body {
+        background: white;
+        color: black;
+        padding: 20px;
+    }
+
+    .card {
+        background: white;
+        border: 1px solid #ccc;
+        box-shadow: none;
+    }
+
+    .upload-card,
+    .action-card,
+    .header,
+    .footer,
+    .btn,
+    .btn-icon,
+    .icon-button {
+        display: none !important;
+    }
+
+    .results-card {
+        display: block !important;
+    }
+
+    .partner-grid {
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 
@@ -828,4 +1526,19 @@ body {
 .stat-card h3 {
     font-size: 1.1rem;
     margin-top: 4px;
+}
+
+/* Mobile-specific stat card adjustments */
+@media (max-width: 600px) {
+    .stat-card {
+        padding: 14px;
+    }
+
+    .stat-card .label {
+        font-size: 0.75rem;
+    }
+
+    .stat-card h3 {
+        font-size: 1.2rem;
+    }
 }
