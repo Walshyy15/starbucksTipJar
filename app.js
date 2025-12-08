@@ -501,15 +501,161 @@ async function handleImageUpload(event) {
 }
 
 /**
+ * Parse the columnar format from Azure Document Intelligence OCR
+ * This handles the case where each cell value appears on a separate line:
+ * Store (header)
+ * 69600 (store value)
+ * Ailuogwemhe, Jodie O (name)
+ * US37008498 (partner number)
+ * 18.48 (hours)
+ * ... repeating for each row
+ */
+function parseColumnarFormat(text) {
+    const entries = [];
+    if (!text) return entries;
+
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+    console.log('Columnar parsing - all lines:', lines);
+
+    // Skip patterns for header lines
+    const headerPatterns = [
+        /^home$/i,
+        /^partner\s*name$/i,
+        /^partner\s*number$/i,
+        /^total\s*tippable\s*hours$/i,
+        /^store$/i,
+        /^total\s*tippable\s*hours:$/i,
+    ];
+
+    // Summary line pattern (e.g., "Total Tippable Hours: 278.31")
+    const summaryPattern = /^total\s*tippable\s*hours:\s*[\d.]+$/i;
+
+    // Find where the data starts by looking for the first 5-digit store number after headers
+    let dataStartIndex = 0;
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        // Check if this looks like a header
+        const isHeader = headerPatterns.some(p => p.test(line));
+        if (!isHeader && /^\d{5}$/.test(line)) {
+            dataStartIndex = i;
+            break;
+        }
+    }
+
+    console.log('Data starts at index:', dataStartIndex);
+
+    // Now extract data - expecting pattern: StoreNum, Name, PartnerNum, Hours
+    // Each partner should have these 4 values on consecutive lines
+    let i = dataStartIndex;
+    while (i < lines.length) {
+        const line = lines[i];
+
+        // Stop if we hit a summary line
+        if (summaryPattern.test(line)) {
+            console.log('Hit summary line, stopping:', line);
+            break;
+        }
+
+        // Skip any remaining header lines in the data section
+        if (headerPatterns.some(p => p.test(line))) {
+            i++;
+            continue;
+        }
+
+        // Expect: 5-digit store number
+        if (/^\d{5}$/.test(line)) {
+            const storeNum = line;
+
+            // Look for the next 3 lines: Name, Partner Number, Hours
+            if (i + 3 < lines.length) {
+                const nameLine = lines[i + 1];
+                const partnerNumLine = lines[i + 2];
+                const hoursLine = lines[i + 3];
+
+                console.log(`Checking group at ${i}: store=${storeNum}, name=${nameLine}, partnerNum=${partnerNumLine}, hours=${hoursLine}`);
+
+                // Validate the pattern
+                const isValidName = nameLine &&
+                    nameLine.length > 1 &&
+                    !/^\d+$/.test(nameLine) &&
+                    !/^US\d+$/i.test(nameLine) &&
+                    !headerPatterns.some(p => p.test(nameLine));
+
+                const isValidPartnerNum = /^US\d+$/i.test(partnerNumLine) || /^\d{6,}$/.test(partnerNumLine);
+                const isValidHours = /^\d+\.?\d*$/.test(hoursLine);
+
+                if (isValidName && isValidPartnerNum && isValidHours) {
+                    const hours = parseFloat(hoursLine);
+                    if (isFinite(hours) && hours > 0 && hours < 200) {
+                        entries.push({
+                            name: nameLine.trim(),
+                            number: partnerNumLine,
+                            hours: hours
+                        });
+                        console.log('Added entry:', entries[entries.length - 1]);
+                    }
+                    i += 4; // Move to next group
+                    continue;
+                }
+            }
+        }
+
+        // Alternative pattern: Name, Partner Number, Hours (without store number on each row)
+        // This handles formats where store number appears once at the beginning
+        const isName = line.length > 2 &&
+            !/^\d+\.?\d*$/.test(line) &&
+            !/^US\d+$/i.test(line) &&
+            !/^\d{5}$/.test(line) &&
+            !headerPatterns.some(p => p.test(line)) &&
+            !summaryPattern.test(line);
+
+        if (isName && i + 2 < lines.length) {
+            const partnerNumLine = lines[i + 1];
+            const hoursLine = lines[i + 2];
+
+            const isValidPartnerNum = /^US\d+$/i.test(partnerNumLine) || /^\d{6,}$/.test(partnerNumLine);
+            const isValidHours = /^\d+\.?\d*$/.test(hoursLine);
+
+            if (isValidPartnerNum && isValidHours) {
+                const hours = parseFloat(hoursLine);
+                if (isFinite(hours) && hours > 0 && hours < 200) {
+                    entries.push({
+                        name: line.trim(),
+                        number: partnerNumLine,
+                        hours: hours
+                    });
+                    console.log('Added entry (alt pattern):', entries[entries.length - 1]);
+                    i += 3; // Move to next group
+                    continue;
+                }
+            }
+        }
+
+        i++; // Move to next line if no pattern matched
+    }
+
+    console.log('Columnar parse found entries:', entries);
+    return entries;
+}
+
+/**
  * Parser for Starbucks Tip Distribution Report format.
  * Handles multiple variations of OCR output including:
- * - "69600 Ailuogwemhe, Jodie O US37008498 9.22" (full format)
+ * - Columnar format: Each field (store, name, number, hours) on separate lines
+ * - "69600 Ailuogwemhe, Jodie O US37008498 9.22" (full format on single line)
  * - "Ailuogwemhe, Jodie O US37008498 9.22" (without store)
  * - "Name 32.56" (simple format)
  * - Table cell data extracted separately
  */
 function parseOcrToPartners(text) {
     console.log('Parsing OCR text:', text);
+
+    // First, try columnar parsing for Azure Document Intelligence format
+    const columnarResult = parseColumnarFormat(text);
+    if (columnarResult.length > 0) {
+        console.log('Columnar parsing succeeded:', columnarResult);
+        return columnarResult;
+    }
 
     const metadataStrip = stripMetadataTokens(text);
 
