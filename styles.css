@@ -43,7 +43,8 @@
 }
 
 html {
-    font-size: 13px;
+    /* Fluid typography: scales from 12px to 14px based on viewport */
+    font-size: clamp(12px, 1.2vw + 10px, 14px);
 }
 
 body {
@@ -785,10 +786,18 @@ body {
    RESPONSIVE DESIGN - Mobile First Approach
    ============================================ */
 
+/* Mobile-specific CSS variables */
+@media (max-width: 600px) {
+    :root {
+        --space-mobile-padding: 12px;
+        --touch-target-min: 48px;
+    }
+}
+
 /* Tablet Breakpoint (768px) */
 @media (max-width: 768px) {
     html {
-        font-size: 14px;
+        font-size: 13px;
     }
 
     body {
@@ -886,7 +895,15 @@ body {
 /* Mobile Breakpoint (600px) */
 @media (max-width: 600px) {
     html {
-        font-size: 15px;
+        font-size: 14px;
+    }
+
+    /* Prevent iOS Safari auto-zoom on input focus */
+    input,
+    select,
+    textarea,
+    .cell-input {
+        font-size: 16px !important;
     }
 
     body {
@@ -1344,6 +1361,157 @@ body {
     }
 }
 
+/* ============================================
+   MOBILE CARD LAYOUT FOR TABLE (480px)
+   Converts table to card-based view
+   ============================================ */
+@media (max-width: 480px) {
+
+    /* Hide table headers - data labels are shown per-cell instead */
+    .data-table thead {
+        position: absolute;
+        left: -9999px;
+        visibility: hidden;
+    }
+
+    /* No minimum width - full width stacking */
+    .data-table {
+        min-width: unset;
+        width: 100%;
+    }
+
+    /* Convert each row to a card */
+    .data-table tbody tr {
+        display: flex;
+        flex-wrap: wrap;
+        background: var(--card-soft);
+        border-radius: var(--radius-md);
+        padding: 14px;
+        margin-bottom: 10px;
+        border: 1px solid var(--border);
+        gap: 8px;
+    }
+
+    /* Style table cells as flex items */
+    .data-table td {
+        display: flex;
+        flex-direction: column;
+        border-bottom: none;
+        padding: 4px 0;
+    }
+
+    /* Name takes full width */
+    .data-table td:nth-child(1) {
+        flex: 1 1 100%;
+        order: 1;
+    }
+
+    /* Partner number - half width */
+    .data-table td:nth-child(2) {
+        flex: 1 1 45%;
+        order: 2;
+    }
+
+    /* Hours - half width */
+    .data-table td:nth-child(3) {
+        flex: 1 1 45%;
+        order: 3;
+        text-align: right;
+    }
+
+    /* Delete button - auto width, aligned right */
+    .data-table td:nth-child(4) {
+        flex: 0 0 auto;
+        order: 4;
+        align-self: flex-start;
+        margin-left: auto;
+        position: absolute;
+        right: 14px;
+        top: 14px;
+    }
+
+    /* Position relative for delete button positioning */
+    .data-table tbody tr {
+        position: relative;
+        padding-right: 48px;
+    }
+
+    /* Add labels before inputs */
+    .data-table td:nth-child(1)::before {
+        content: "Name";
+        font-weight: 600;
+        color: var(--muted);
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 4px;
+    }
+
+    .data-table td:nth-child(2)::before {
+        content: "Partner #";
+        font-weight: 600;
+        color: var(--muted);
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 4px;
+    }
+
+    .data-table td:nth-child(3)::before {
+        content: "Hours";
+        font-weight: 600;
+        color: var(--muted);
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 4px;
+    }
+
+    /* Larger, more prominent inputs in card view */
+    .data-table .cell-input {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+        padding: 12px;
+        min-height: 48px;
+        font-size: 16px !important;
+    }
+
+    /* Table wrapper - no overflow needed with card layout */
+    .table-wrapper {
+        overflow-x: visible;
+        margin: 0;
+        padding: 0;
+    }
+}
+
+/* ============================================
+   ENHANCED TOUCH TARGETS (All Mobile)
+   Ensures minimum 48x48px for all interactive elements
+   ============================================ */
+@media (max-width: 600px) {
+
+    /* Buttons */
+    .btn,
+    .btn-icon,
+    .upload-btn,
+    .icon-button {
+        min-width: 48px;
+        min-height: 48px;
+    }
+
+    /* Delete row button */
+    .icon-button {
+        width: 40px;
+        height: 40px;
+    }
+
+    /* Bill edit inputs */
+    .bill-edit input {
+        min-height: 48px;
+        touch-action: manipulation;
+    }
+}
+
 /* Landscape mode on mobile */
 @media (max-width: 900px) and (orientation: landscape) {
     body {
@@ -1386,6 +1554,7 @@ body {
 
 /* Touch device optimizations */
 @media (hover: none) and (pointer: coarse) {
+
     /* Larger touch targets */
     .btn,
     .btn-icon,
@@ -1434,7 +1603,8 @@ body {
 }
 
 /* High DPI / Retina displays */
-@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+@media (-webkit-min-device-pixel-ratio: 2),
+(min-resolution: 192dpi) {
     .card {
         border-width: 0.5px;
     }

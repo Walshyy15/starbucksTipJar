@@ -282,7 +282,7 @@ async function callAzureVisionOCR(imageBase64) {
         await sleep(1000); // Wait 1 second between polls
         attempts++;
 
-        setOcrStatus(`${Math.min(attempts * 2, 95)}%`, { loading: true });
+        setOcrStatus("Processing...", { loading: true });
 
         const resultResponse = await fetch(operationLocation, {
             method: 'GET',
@@ -462,7 +462,7 @@ async function callAzureLayoutFallback(imageBase64, config) {
     while (attempts < 60) {
         await sleep(1000);
         attempts++;
-        setOcrStatus(`${Math.min(attempts * 2, 95)}%`, { loading: true });
+        setOcrStatus("Processing...", { loading: true });
 
         const resultResponse = await fetch(operationLocation, {
             method: 'GET',
@@ -531,7 +531,7 @@ async function callComputerVisionOCR(imageBase64, config) {
     while (attempts < 30) {
         await sleep(1000);
         attempts++;
-        setOcrStatus(`${Math.min(attempts * 3, 95)}%`, { loading: true });
+        setOcrStatus("Processing...", { loading: true });
 
         const resultResponse = await fetch(operationLocation, {
             method: 'GET',
@@ -580,12 +580,12 @@ async function handleImageUpload(event) {
         return;
     }
 
-    setOcrStatus("Checking Azure configuration...");
+    setOcrStatus("Preparing image...");
 
     const config = getAzureConfig();
     if (!config.endpoint || config.endpoint === '__AZURE_VISION_ENDPOINT__' ||
         !config.apiKey || config.apiKey === '__AZURE_VISION_API_KEY__') {
-        setOcrStatus("Azure Vision API not configured. Add secrets to GitHub and redeploy.");
+        setOcrStatus("OCR not configured. Add secrets to GitHub and redeploy.");
         console.error("Azure Vision API credentials not configured. Current config:", {
             endpoint: config.endpoint ? (config.endpoint.includes('__') ? 'PLACEHOLDER' : 'SET') : 'MISSING',
             apiKey: config.apiKey ? (config.apiKey.includes('__') ? 'PLACEHOLDER' : 'SET') : 'MISSING'
@@ -594,12 +594,12 @@ async function handleImageUpload(event) {
         return;
     }
 
-    setOcrStatus("Uploading image... 0%", { loading: true });
+    setOcrStatus("Processing...", { loading: true });
 
     try {
         // Convert file to base64
         const base64 = await fileToBase64(file);
-        setOcrStatus("Processing with Document Intelligence... 10%", { loading: true });
+        setOcrStatus("Processing...", { loading: true });
 
         // Call Azure Vision API (now uses prebuilt-layout for table extraction)
         const result = await callAzureVisionOCR(base64);
