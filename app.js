@@ -645,7 +645,7 @@ async function handleImageUpload(event) {
         renderPartnerTable();
         updateTotalHours();
         clearResults();
-        setOcrStatus(`OCR complete. Loaded ${partners.length} partners from table. Review and adjust as needed.`);
+        setOcrStatus(`${partners.length} Partner${partners.length !== 1 ? 's' : ''}`);
     } catch (err) {
         console.error(err);
         setOcrStatus(`Error: ${err.message}. You can still type data manually.`);
