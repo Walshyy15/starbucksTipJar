@@ -441,6 +441,14 @@ body {
     padding: 14px;
 }
 
+/* Combined Tips & Action Card */
+.tips-action-card {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 16px;
+}
+
 .tips-input-group label {
     display: flex;
     align-items: center;

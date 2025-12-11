@@ -119,40 +119,35 @@
                 </section>
             </div>
 
-            <div class="grid two-column">
-                <!-- Total Tips Input -->
-                <section class="card tips-card">
-                    <div class="tips-input-group">
-                        <label for="total-tips">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-                                <line x1="1" y1="10" x2="23" y2="10" />
-                            </svg>
-                            Total Tip Amount
-                        </label>
-                        <div class="input-wrapper">
-                            <span class="currency-symbol">$</span>
-                            <input id="total-tips" type="number" min="0" step="0.01" placeholder="0.00" />
-                        </div>
-                    </div>
-                    <div id="hourly-rate-display" class="hourly-rate"></div>
-                </section>
-
-                <section class="card action-card">
-                    <button id="calculate-btn" type="button" class="btn btn-primary btn-large full-width">
+            <!-- Combined Tips Input & Calculate Section -->
+            <section class="card tips-action-card">
+                <div class="tips-input-group">
+                    <label for="total-tips">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                             stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
-                            <line x1="8" y1="6" x2="16" y2="6" />
-                            <line x1="8" y1="10" x2="16" y2="10" />
-                            <line x1="8" y1="14" x2="12" y2="14" />
+                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+                            <line x1="1" y1="10" x2="23" y2="10" />
                         </svg>
-                        Calculate Distribution
-                    </button>
-                    <p class="action-hint">Hourly rate truncated to 2 decimals, payouts rounded to nearest dollar.</p>
-                </section>
-            </div>
+                        Total Tip Amount
+                    </label>
+                    <div class="input-wrapper">
+                        <span class="currency-symbol">$</span>
+                        <input id="total-tips" type="number" min="0" step="0.01" placeholder="0.00" />
+                    </div>
+                </div>
+                <div id="hourly-rate-display" class="hourly-rate"></div>
+                <button id="calculate-btn" type="button" class="btn btn-primary btn-large full-width">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
+                        <line x1="8" y1="6" x2="16" y2="6" />
+                        <line x1="8" y1="10" x2="16" y2="10" />
+                        <line x1="8" y1="14" x2="12" y2="14" />
+                    </svg>
+                    Calculate Distribution
+                </button>
+                <p class="action-hint">Hourly rate truncated to 2 decimals, payouts rounded to nearest dollar.</p>
+            </section>
 
             <!-- Results Section -->
             <section class="card results-card" id="results-section">
