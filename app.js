@@ -8,55 +8,18 @@
 //   (e.g. $44.61 -> $45 as requested)
 // - Breaks payouts into $20/$10/$5/$1 bills and totals all bills needed
 
-// ============================================================================
-// DEBUG LOGGING SYSTEM
-// ============================================================================
-// Debug logging is DISABLED by default to keep the console clean for users.
-// To enable debug logging:
-//   1. Add ?debug=true to the URL, OR
-//   2. Run in browser console: localStorage.setItem('tipjar_debug', 'true')
-// To disable: localStorage.removeItem('tipjar_debug') or remove ?debug from URL
-// ============================================================================
-
-const DEBUG_ENABLED = (() => {
-    // Check URL parameter
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('debug') === 'true') return true;
-
-    // Check localStorage
-    try {
-        if (localStorage.getItem('tipjar_debug') === 'true') return true;
-    } catch (e) {
-        // localStorage not available
-    }
-
-    return false;
-})();
+// Debug mode - set to true to see detailed console logs
+// Can also be enabled via browser console: window.DEBUG_MODE = true
+let DEBUG_MODE = false;
 
 /**
- * Debug logging function - only outputs when DEBUG_ENABLED is true
- * Use this instead of console.log for development/debugging output
+ * Debug logger - only outputs when DEBUG_MODE is enabled
+ * Usage: debugLog('message') or debugLog('label', data)
  */
 function debugLog(...args) {
-    if (DEBUG_ENABLED) {
+    if (DEBUG_MODE || window.DEBUG_MODE) {
         console.log('[TipJar Debug]', ...args);
     }
-}
-
-/**
- * Debug warning function - only outputs when DEBUG_ENABLED is true
- */
-function debugWarn(...args) {
-    if (DEBUG_ENABLED) {
-        console.warn('[TipJar Debug]', ...args);
-    }
-}
-
-/**
- * Debug error function - ALWAYS outputs (errors should always be visible)
- */
-function debugError(...args) {
-    console.error('[TipJar Error]', ...args);
 }
 
 let partners = []; // { id, name, number, hours }
@@ -226,7 +189,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const config = getAzureConfig();
     if (!config.endpoint || config.endpoint === '__AZURE_VISION_ENDPOINT__' ||
         !config.apiKey || config.apiKey === '__AZURE_VISION_API_KEY__') {
-        debugWarn("Azure Vision API not configured. OCR will not work until credentials are set.");
+        debugLog("Azure Vision API not configured. OCR will not work until credentials are set.");
     }
 
     // Start with one blank row for convenience
@@ -325,7 +288,7 @@ async function callAzureVisionOCR(imageBase64) {
 
     if (!submitResponse.ok) {
         const errorText = await submitResponse.text();
-        debugError('Azure API Error:', errorText);
+        debugLog('Azure API Error:', errorText);
 
         // Check if it's an unexpected response
         if (submitResponse.status >= 400) {
@@ -373,7 +336,7 @@ async function callAzureVisionOCR(imageBase64) {
         if (result.status === 'succeeded' || result.status === 'completed') {
             break;
         } else if (result.status === 'failed') {
-            debugError('Analysis failed:', result);
+            debugLog('Analysis failed:', result);
             const errorMessage = result.error?.message || 'Unknown error';
             throw new Error(`Azure analysis failed: ${errorMessage}`);
         }
@@ -792,7 +755,7 @@ async function callAzureLayoutFallback(imageBase64, config) {
 
     if (!submitResponse.ok) {
         const errorText = await submitResponse.text();
-        debugError('Fallback API Error:', errorText);
+        debugLog('Fallback API Error:', errorText);
 
         // Try Computer Vision as last resort
         debugLog('Trying Computer Vision API as last resort...');
@@ -935,7 +898,7 @@ async function handleImageUpload(event) {
     if (!config.endpoint || config.endpoint === '__AZURE_VISION_ENDPOINT__' ||
         !config.apiKey || config.apiKey === '__AZURE_VISION_API_KEY__') {
         setOcrStatus("OCR not configured. Add secrets to GitHub and redeploy.");
-        debugError("Azure Vision API credentials not configured. Current config:", {
+        debugLog("Azure Vision API credentials not configured. Current config:", {
             endpoint: config.endpoint ? (config.endpoint.includes('__') ? 'PLACEHOLDER' : 'SET') : 'MISSING',
             apiKey: config.apiKey ? (config.apiKey.includes('__') ? 'PLACEHOLDER' : 'SET') : 'MISSING'
         });
@@ -996,7 +959,7 @@ async function handleImageUpload(event) {
         clearResults();
         setOcrStatus(`${partners.length} Partner${partners.length !== 1 ? 's' : ''}`);
     } catch (err) {
-        debugError(err);
+        debugLog(err);
         setOcrStatus(`Error: ${err.message}. You can still type data manually.`);
     }
 }
