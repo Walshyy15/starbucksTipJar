@@ -221,9 +221,24 @@ function fileToBase64(file) {
 }
 
 /**
+ * Helper generator function to get text from content spans
+ * Aligns with Azure Document Intelligence SDK patterns
+ * @param {string} content - The full document content
+ * @param {Array} spans - Array of span objects with offset and length
+ */
+function* getTextOfSpans(content, spans) {
+    for (const span of spans) {
+        yield content.slice(span.offset, span.offset + span.length);
+    }
+}
+
+/**
  * Call Azure Document Intelligence (Form Recognizer) Layout API
  * Uses the prebuilt-layout model for table extraction from documents
  * This provides structured table data with cells for better accuracy
+ * 
+ * Based on Azure Document Intelligence SDK patterns:
+ * https://learn.microsoft.com/azure/ai-services/document-intelligence/quickstarts/get-started-sdks-rest-api
  */
 async function callAzureVisionOCR(imageBase64) {
     const config = getAzureConfig();
@@ -240,12 +255,14 @@ async function callAzureVisionOCR(imageBase64) {
     const endpoint = config.endpoint.replace(/\/$/, '');
 
     // Use Document Intelligence prebuilt-layout model for table extraction
-    // This provides better structured data for tip distribution reports
-    const analyzeUrl = `${endpoint}/documentintelligence/documentModels/prebuilt-layout:analyze?api-version=2024-11-30`;
+    // API version 2024-11-30 is the latest stable version
+    const modelId = 'prebuilt-layout';
+    const analyzeUrl = `${endpoint}/documentintelligence/documentModels/${modelId}:analyze?api-version=2024-11-30`;
 
     console.log('Using Document Intelligence Layout API:', analyzeUrl);
+    console.log('Model ID:', modelId);
 
-    // Step 1: Submit the image for analysis
+    // Step 1: Submit the image for analysis (POST with binary data)
     const submitResponse = await fetch(analyzeUrl, {
         method: 'POST',
         headers: {
@@ -259,21 +276,24 @@ async function callAzureVisionOCR(imageBase64) {
         const errorText = await submitResponse.text();
         console.error('Azure API Error:', errorText);
 
-        // Try fallback URL format for older API versions
-        console.log('Trying alternative API format...');
-        return await callAzureLayoutFallback(imageBase64, config);
+        // Check if it's an unexpected response
+        if (submitResponse.status >= 400) {
+            console.log('Trying alternative API format...');
+            return await callAzureLayoutFallback(imageBase64, config);
+        }
+        throw new Error(`Azure API error: ${submitResponse.status} - ${errorText}`);
     }
 
-    // Step 2: Get the operation location from headers
+    // Step 2: Get the operation location from headers (Long Running Operation pattern)
     const operationLocation = submitResponse.headers.get('Operation-Location') ||
         submitResponse.headers.get('operation-location');
     if (!operationLocation) {
-        throw new Error("No operation location returned from Azure");
+        throw new Error("No operation location returned from Azure. Check your API configuration.");
     }
 
     console.log('Operation location:', operationLocation);
 
-    // Step 3: Poll for results
+    // Step 3: Poll for results using Long Running Poller pattern
     let result = null;
     let attempts = 0;
     const maxAttempts = 60; // Max 60 seconds wait
@@ -282,7 +302,7 @@ async function callAzureVisionOCR(imageBase64) {
         await sleep(1000); // Wait 1 second between polls
         attempts++;
 
-        setOcrStatus("Processing...", { loading: true });
+        setOcrStatus(`Analyzing document... (${attempts}s)`, { loading: true });
 
         const resultResponse = await fetch(operationLocation, {
             method: 'GET',
@@ -298,59 +318,99 @@ async function callAzureVisionOCR(imageBase64) {
         result = await resultResponse.json();
         console.log('Poll result status:', result.status);
 
+        // Check for completion (SDK uses 'succeeded', REST may return 'completed')
         if (result.status === 'succeeded' || result.status === 'completed') {
             break;
         } else if (result.status === 'failed') {
             console.error('Analysis failed:', result);
-            throw new Error("Azure analysis failed");
+            const errorMessage = result.error?.message || 'Unknown error';
+            throw new Error(`Azure analysis failed: ${errorMessage}`);
         }
         // Otherwise, status is 'running' or 'notStarted', keep polling
     }
 
     if (!result || (result.status !== 'succeeded' && result.status !== 'completed')) {
-        throw new Error("Timeout waiting for Azure results");
+        throw new Error("Timeout waiting for Azure results after 60 seconds");
+    }
+
+    // Get the analyzeResult from the response body
+    const analyzeResult = result.analyzeResult;
+
+    if (!analyzeResult) {
+        throw new Error("No analyzeResult in response");
+    }
+
+    const content = analyzeResult.content;
+    const pages = analyzeResult.pages;
+    const tables = analyzeResult.tables;
+    const languages = analyzeResult.languages;
+
+    // Log extracted data for debugging
+    if (pages && pages.length > 0) {
+        console.log("Pages:");
+        for (const page of pages) {
+            console.log(`- Page ${page.pageNumber} (unit: ${page.unit})`);
+            console.log(`  ${page.width}x${page.height}, angle: ${page.angle}`);
+            console.log(`  ${(page.lines || []).length} lines, ${(page.words || []).length} words`);
+        }
     }
 
     // Check for table data in the results (prebuilt-layout extracts tables)
-    const analyzeResult = result.analyzeResult;
-
-    if (analyzeResult && analyzeResult.tables && analyzeResult.tables.length > 0) {
-        console.log('Found tables in document:', analyzeResult.tables.length);
+    if (tables && tables.length > 0) {
+        console.log('Tables found:', tables.length);
+        for (const table of tables) {
+            console.log(`- Extracted table: ${table.columnCount} columns, ${table.rowCount} rows (${(table.cells || []).length} cells)`);
+        }
 
         // Extract partner data from tables
-        const partners = extractPartnersFromTables(analyzeResult.tables);
+        const partners = extractPartnersFromTables(tables);
 
         if (partners.length > 0) {
             console.log('Extracted partners from tables:', partners);
             // Return as special format that parseOcrToPartners can handle
             return { type: 'table_data', partners: partners };
         }
+    } else {
+        console.log("No tables were extracted from the document.");
+    }
+
+    // Log detected languages
+    if (languages && languages.length > 0) {
+        console.log("Languages detected:");
+        for (const languageEntry of languages) {
+            console.log(`- Found language: ${languageEntry.locale} (confidence: ${languageEntry.confidence})`);
+            if (content) {
+                for (const text of getTextOfSpans(content, languageEntry.spans || [])) {
+                    const escapedText = text.replace(/\r?\n/g, "\\n").replace(/"/g, '\\"');
+                    console.log(`  - "${escapedText.substring(0, 100)}${escapedText.length > 100 ? '...' : ''}"`);
+                }
+            }
+        }
     }
 
     // Fallback to text extraction if no tables found
-    const lines = [];
-
-    // Document Intelligence content format
-    if (analyzeResult && analyzeResult.content) {
-        console.log('Raw content:', analyzeResult.content);
-        return analyzeResult.content;
+    if (content) {
+        console.log('Using raw content for parsing');
+        console.log('Content preview:', content.substring(0, 500));
+        return content;
     }
 
-    // Document Intelligence pages format
-    if (analyzeResult && analyzeResult.pages) {
-        for (const page of analyzeResult.pages) {
+    // Document Intelligence pages format fallback
+    if (pages && pages.length > 0) {
+        const lines = [];
+        for (const page of pages) {
             for (const line of page.lines || []) {
                 lines.push(line.content || line.text);
             }
         }
         if (lines.length > 0) {
-            console.log('Extracted lines:', lines);
+            console.log('Extracted lines from pages:', lines.length);
             return lines.join('\n');
         }
     }
 
     console.log('Full result:', JSON.stringify(result, null, 2));
-    return lines.join('\n');
+    return '';
 }
 
 /**
