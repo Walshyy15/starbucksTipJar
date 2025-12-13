@@ -8,6 +8,57 @@
 //   (e.g. $44.61 -> $45 as requested)
 // - Breaks payouts into $20/$10/$5/$1 bills and totals all bills needed
 
+// ============================================================================
+// DEBUG LOGGING SYSTEM
+// ============================================================================
+// Debug logging is DISABLED by default to keep the console clean for users.
+// To enable debug logging:
+//   1. Add ?debug=true to the URL, OR
+//   2. Run in browser console: localStorage.setItem('tipjar_debug', 'true')
+// To disable: localStorage.removeItem('tipjar_debug') or remove ?debug from URL
+// ============================================================================
+
+const DEBUG_ENABLED = (() => {
+    // Check URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('debug') === 'true') return true;
+
+    // Check localStorage
+    try {
+        if (localStorage.getItem('tipjar_debug') === 'true') return true;
+    } catch (e) {
+        // localStorage not available
+    }
+
+    return false;
+})();
+
+/**
+ * Debug logging function - only outputs when DEBUG_ENABLED is true
+ * Use this instead of console.log for development/debugging output
+ */
+function debugLog(...args) {
+    if (DEBUG_ENABLED) {
+        console.log('[TipJar Debug]', ...args);
+    }
+}
+
+/**
+ * Debug warning function - only outputs when DEBUG_ENABLED is true
+ */
+function debugWarn(...args) {
+    if (DEBUG_ENABLED) {
+        console.warn('[TipJar Debug]', ...args);
+    }
+}
+
+/**
+ * Debug error function - ALWAYS outputs (errors should always be visible)
+ */
+function debugError(...args) {
+    console.error('[TipJar Error]', ...args);
+}
+
 let partners = []; // { id, name, number, hours }
 let nextPartnerId = 1;
 
@@ -175,7 +226,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const config = getAzureConfig();
     if (!config.endpoint || config.endpoint === '__AZURE_VISION_ENDPOINT__' ||
         !config.apiKey || config.apiKey === '__AZURE_VISION_API_KEY__') {
-        console.warn("Azure Vision API not configured. OCR will not work until credentials are set.");
+        debugWarn("Azure Vision API not configured. OCR will not work until credentials are set.");
     }
 
     // Start with one blank row for convenience
@@ -259,8 +310,8 @@ async function callAzureVisionOCR(imageBase64) {
     const modelId = 'prebuilt-layout';
     const analyzeUrl = `${endpoint}/documentintelligence/documentModels/${modelId}:analyze?api-version=2024-11-30`;
 
-    console.log('Using Document Intelligence Layout API:', analyzeUrl);
-    console.log('Model ID:', modelId);
+    debugLog('Using Document Intelligence Layout API:', analyzeUrl);
+    debugLog('Model ID:', modelId);
 
     // Step 1: Submit the image for analysis (POST with binary data)
     const submitResponse = await fetch(analyzeUrl, {
@@ -274,11 +325,11 @@ async function callAzureVisionOCR(imageBase64) {
 
     if (!submitResponse.ok) {
         const errorText = await submitResponse.text();
-        console.error('Azure API Error:', errorText);
+        debugError('Azure API Error:', errorText);
 
         // Check if it's an unexpected response
         if (submitResponse.status >= 400) {
-            console.log('Trying alternative API format...');
+            debugLog('Trying alternative API format...');
             return await callAzureLayoutFallback(imageBase64, config);
         }
         throw new Error(`Azure API error: ${submitResponse.status} - ${errorText}`);
@@ -291,7 +342,7 @@ async function callAzureVisionOCR(imageBase64) {
         throw new Error("No operation location returned from Azure. Check your API configuration.");
     }
 
-    console.log('Operation location:', operationLocation);
+    debugLog('Operation location:', operationLocation);
 
     // Step 3: Poll for results using Long Running Poller pattern
     let result = null;
@@ -316,13 +367,13 @@ async function callAzureVisionOCR(imageBase64) {
         }
 
         result = await resultResponse.json();
-        console.log('Poll result status:', result.status);
+        debugLog('Poll result status:', result.status);
 
         // Check for completion (SDK uses 'succeeded', REST may return 'completed')
         if (result.status === 'succeeded' || result.status === 'completed') {
             break;
         } else if (result.status === 'failed') {
-            console.error('Analysis failed:', result);
+            debugError('Analysis failed:', result);
             const errorMessage = result.error?.message || 'Unknown error';
             throw new Error(`Azure analysis failed: ${errorMessage}`);
         }
@@ -347,42 +398,42 @@ async function callAzureVisionOCR(imageBase64) {
 
     // Log extracted data for debugging
     if (pages && pages.length > 0) {
-        console.log("Pages:");
+        debugLog("Pages:");
         for (const page of pages) {
-            console.log(`- Page ${page.pageNumber} (unit: ${page.unit})`);
-            console.log(`  ${page.width}x${page.height}, angle: ${page.angle}`);
-            console.log(`  ${(page.lines || []).length} lines, ${(page.words || []).length} words`);
+            debugLog(`- Page ${page.pageNumber} (unit: ${page.unit})`);
+            debugLog(`  ${page.width}x${page.height}, angle: ${page.angle}`);
+            debugLog(`  ${(page.lines || []).length} lines, ${(page.words || []).length} words`);
         }
     }
 
     // Check for table data in the results (prebuilt-layout extracts tables)
     if (tables && tables.length > 0) {
-        console.log('Tables found:', tables.length);
+        debugLog('Tables found:', tables.length);
         for (const table of tables) {
-            console.log(`- Extracted table: ${table.columnCount} columns, ${table.rowCount} rows (${(table.cells || []).length} cells)`);
+            debugLog(`- Extracted table: ${table.columnCount} columns, ${table.rowCount} rows (${(table.cells || []).length} cells)`);
         }
 
         // Extract partner data from tables
         const partners = extractPartnersFromTables(tables);
 
         if (partners.length > 0) {
-            console.log('Extracted partners from tables:', partners);
+            debugLog('Extracted partners from tables:', partners);
             // Return as special format that parseOcrToPartners can handle
             return { type: 'table_data', partners: partners };
         }
     } else {
-        console.log("No tables were extracted from the document.");
+        debugLog("No tables were extracted from the document.");
     }
 
     // Log detected languages
     if (languages && languages.length > 0) {
-        console.log("Languages detected:");
+        debugLog("Languages detected:");
         for (const languageEntry of languages) {
-            console.log(`- Found language: ${languageEntry.locale} (confidence: ${languageEntry.confidence})`);
+            debugLog(`- Found language: ${languageEntry.locale} (confidence: ${languageEntry.confidence})`);
             if (content) {
                 for (const text of getTextOfSpans(content, languageEntry.spans || [])) {
                     const escapedText = text.replace(/\r?\n/g, "\\n").replace(/"/g, '\\"');
-                    console.log(`  - "${escapedText.substring(0, 100)}${escapedText.length > 100 ? '...' : ''}"`);
+                    debugLog(`  - "${escapedText.substring(0, 100)}${escapedText.length > 100 ? '...' : ''}"`);
                 }
             }
         }
@@ -390,8 +441,8 @@ async function callAzureVisionOCR(imageBase64) {
 
     // Fallback to text extraction if no tables found
     if (content) {
-        console.log('Using raw content for parsing');
-        console.log('Content preview:', content.substring(0, 500));
+        debugLog('Using raw content for parsing');
+        debugLog('Content preview:', content.substring(0, 500));
         return content;
     }
 
@@ -404,77 +455,315 @@ async function callAzureVisionOCR(imageBase64) {
             }
         }
         if (lines.length > 0) {
-            console.log('Extracted lines from pages:', lines.length);
+            debugLog('Extracted lines from pages:', lines.length);
             return lines.join('\n');
         }
     }
 
-    console.log('Full result:', JSON.stringify(result, null, 2));
+    debugLog('Full result:', JSON.stringify(result, null, 2));
     return '';
 }
 
 /**
  * Extract partner data from Document Intelligence table cells
- * Expected columns: Home Store, Partner Name, Partner Number, Total Tippable Hours
+ * Uses smart header detection to dynamically identify columns
+ * Supports various column orders and header text variations
  */
 function extractPartnersFromTables(tables) {
     const partners = [];
 
     for (const table of tables) {
-        const rows = [];
+        debugLog(`Processing table: ${table.columnCount} columns, ${table.rowCount} rows`);
 
-        // Group cells by row
+        // Step 1: Build a map of all cells organized by row
+        const cellsByRow = new Map();
+
         for (const cell of table.cells || []) {
             const rowIndex = cell.rowIndex;
-            const colIndex = cell.columnIndex;
-
-            // Skip header row (rowIndex 0)
-            if (rowIndex === 0) continue;
-
-            if (!rows[rowIndex]) {
-                rows[rowIndex] = {};
+            if (!cellsByRow.has(rowIndex)) {
+                cellsByRow.set(rowIndex, new Map());
             }
+            cellsByRow.get(rowIndex).set(cell.columnIndex, (cell.content || '').trim());
+        }
 
-            const content = (cell.content || '').trim();
+        // Step 2: Detect column mappings from header row (row 0)
+        const columnMap = detectColumnHeaders(cellsByRow.get(0));
 
-            // Map columns based on expected Starbucks Tip Distribution Report format
-            switch (colIndex) {
-                case 0:
-                    rows[rowIndex].store = content;
+        if (!columnMap.hasRequiredFields()) {
+            debugLog('Could not detect required columns (name and hours). Trying fallback...');
+            // Try without header detection (assume fixed positions)
+            const fallbackPartners = extractWithFixedColumns(cellsByRow, table.rowCount);
+            partners.push(...fallbackPartners);
+            continue;
+        }
+
+        debugLog('Detected column mappings:', columnMap.toJSON());
+
+        // Step 3: Extract partner data from data rows (skip header row 0)
+        for (let rowIndex = 1; rowIndex < table.rowCount; rowIndex++) {
+            const rowCells = cellsByRow.get(rowIndex);
+            if (!rowCells) continue;
+
+            const partner = columnMap.extractPartner(rowCells);
+
+            if (partner && isValidPartnerEntry(partner)) {
+                partners.push(partner);
+                debugLog(`Extracted partner: ${partner.name} - ${partner.hours} hours`);
+            }
+        }
+    }
+
+    debugLog(`Total partners extracted from tables: ${partners.length}`);
+    return partners;
+}
+
+/**
+ * Detect column types from header row text
+ * Returns a ColumnMap object with methods to extract partner data
+ */
+function detectColumnHeaders(headerRow) {
+    const columnMap = {
+        nameCol: -1,
+        numberCol: -1,
+        hoursCol: -1,
+        storeCol: -1,
+
+        hasRequiredFields() {
+            // At minimum, we need name and hours columns
+            return this.nameCol >= 0 && this.hoursCol >= 0;
+        },
+
+        toJSON() {
+            return {
+                nameCol: this.nameCol,
+                numberCol: this.numberCol,
+                hoursCol: this.hoursCol,
+                storeCol: this.storeCol
+            };
+        },
+
+        extractPartner(rowCells) {
+            const name = this.nameCol >= 0 ? (rowCells.get(this.nameCol) || '') : '';
+            const number = this.numberCol >= 0 ? (rowCells.get(this.numberCol) || '') : '';
+            const hoursStr = this.hoursCol >= 0 ? (rowCells.get(this.hoursCol) || '0') : '0';
+            const store = this.storeCol >= 0 ? (rowCells.get(this.storeCol) || '') : '';
+
+            // Parse hours - handle various formats
+            const hours = parseHoursValue(hoursStr);
+
+            return {
+                name: name.trim(),
+                number: number.trim(),
+                hours: hours,
+                store: store.trim()
+            };
+        }
+    };
+
+    if (!headerRow) {
+        debugLog('No header row found');
+        return columnMap;
+    }
+
+    // Patterns to match different header text variations
+    const namePatterns = [
+        /partner\s*name/i,
+        /^name$/i,
+        /employee\s*name/i,
+        /barista/i,
+        /partner$/i
+    ];
+
+    const numberPatterns = [
+        /partner\s*(number|#|no\.?|num)/i,
+        /^(number|#|id)$/i,
+        /employee\s*(number|#|id)/i,
+        /partner\s*id/i,
+        /^#$/
+    ];
+
+    const hoursPatterns = [
+        /tippable\s*hours/i,
+        /total\s*tippable/i,
+        /hours/i,
+        /^hrs$/i,
+        /worked/i,
+        /time/i
+    ];
+
+    const storePatterns = [
+        /home\s*store/i,
+        /store\s*(number|#|no\.?|num)?/i,
+        /location/i,
+        /^store$/i
+    ];
+
+    // Check each column header against patterns
+    for (const [colIndex, headerText] of headerRow.entries()) {
+        const text = headerText.toLowerCase().trim();
+
+        debugLog(`Checking header column ${colIndex}: "${headerText}"`);
+
+        // Check for name column
+        if (columnMap.nameCol < 0) {
+            for (const pattern of namePatterns) {
+                if (pattern.test(headerText)) {
+                    columnMap.nameCol = colIndex;
+                    debugLog(`  -> Matched as NAME column`);
                     break;
-                case 1:
-                    rows[rowIndex].partnerName = content;
-                    break;
-                case 2:
-                    rows[rowIndex].partnerNumber = content;
-                    break;
-                case 3:
-                    rows[rowIndex].tippableHours = parseFloat(content) || 0;
-                    break;
+                }
             }
         }
 
-        // Filter out invalid rows (e.g., "Total Tippable" row)
-        for (const row of rows) {
-            if (!row) continue;
-
-            const name = row.partnerName || '';
-
-            // Skip if name contains "total" (footer row)
-            if (name.toLowerCase().includes('total tippable') ||
-                name.toLowerCase().includes('total:')) {
-                continue;
+        // Check for partner number column
+        if (columnMap.numberCol < 0) {
+            for (const pattern of numberPatterns) {
+                if (pattern.test(headerText)) {
+                    columnMap.numberCol = colIndex;
+                    debugLog(`  -> Matched as NUMBER column`);
+                    break;
+                }
             }
+        }
 
-            // Skip empty names
-            if (!name || name.length < 2) continue;
+        // Check for hours column
+        if (columnMap.hoursCol < 0) {
+            for (const pattern of hoursPatterns) {
+                if (pattern.test(headerText)) {
+                    columnMap.hoursCol = colIndex;
+                    debugLog(`  -> Matched as HOURS column`);
+                    break;
+                }
+            }
+        }
 
-            partners.push({
-                name: name,
-                number: row.partnerNumber || '',
-                hours: row.tippableHours || 0,
-                store: row.store || ''
-            });
+        // Check for store column
+        if (columnMap.storeCol < 0) {
+            for (const pattern of storePatterns) {
+                if (pattern.test(headerText)) {
+                    columnMap.storeCol = colIndex;
+                    debugLog(`  -> Matched as STORE column`);
+                    break;
+                }
+            }
+        }
+    }
+
+    return columnMap;
+}
+
+/**
+ * Parse hours value from string, handling various formats
+ */
+function parseHoursValue(hoursStr) {
+    if (!hoursStr) return 0;
+
+    // Remove any non-numeric characters except decimal point and minus
+    const cleaned = hoursStr.replace(/[^\d.\-]/g, '');
+    const hours = parseFloat(cleaned);
+
+    // Validate: hours should be between 0 and 200 (reasonable range)
+    if (isFinite(hours) && hours >= 0 && hours < 200) {
+        return hours;
+    }
+
+    return 0;
+}
+
+/**
+ * Validate that a partner entry is valid (not a header, footer, or empty row)
+ */
+function isValidPartnerEntry(partner) {
+    if (!partner || !partner.name) return false;
+
+    const nameLower = partner.name.toLowerCase();
+
+    // Skip header-like rows
+    if (nameLower.includes('partner name') ||
+        nameLower.includes('employee name') ||
+        nameLower === 'name') {
+        return false;
+    }
+
+    // Skip footer/total rows
+    if (nameLower.includes('total tippable') ||
+        nameLower.includes('total:') ||
+        nameLower === 'total' ||
+        nameLower.includes('grand total')) {
+        return false;
+    }
+
+    // Skip if name is too short
+    if (partner.name.trim().length < 2) {
+        return false;
+    }
+
+    // Skip if name is just numbers (probably a store number in wrong column)
+    if (/^\d+$/.test(partner.name.trim())) {
+        return false;
+    }
+
+    // Must have valid hours (greater than 0)
+    if (!partner.hours || partner.hours <= 0) {
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * Fallback: Extract partners using fixed column positions
+ * Used when header detection fails
+ */
+function extractWithFixedColumns(cellsByRow, rowCount) {
+    const partners = [];
+
+    debugLog('Using fixed column extraction (fallback)');
+
+    // Try common Starbucks format: Store, Name, Number, Hours
+    for (let rowIndex = 1; rowIndex < rowCount; rowIndex++) {
+        const rowCells = cellsByRow.get(rowIndex);
+        if (!rowCells) continue;
+
+        // Try multiple column arrangements
+        let partner = null;
+
+        // Arrangement 1: Store(0), Name(1), Number(2), Hours(3)
+        partner = {
+            store: rowCells.get(0) || '',
+            name: rowCells.get(1) || '',
+            number: rowCells.get(2) || '',
+            hours: parseHoursValue(rowCells.get(3) || '0')
+        };
+
+        if (isValidPartnerEntry(partner)) {
+            partners.push(partner);
+            continue;
+        }
+
+        // Arrangement 2: Name(0), Number(1), Hours(2)
+        partner = {
+            store: '',
+            name: rowCells.get(0) || '',
+            number: rowCells.get(1) || '',
+            hours: parseHoursValue(rowCells.get(2) || '0')
+        };
+
+        if (isValidPartnerEntry(partner)) {
+            partners.push(partner);
+            continue;
+        }
+
+        // Arrangement 3: Name(0), Hours(1)
+        partner = {
+            store: '',
+            name: rowCells.get(0) || '',
+            number: '',
+            hours: parseHoursValue(rowCells.get(1) || '0')
+        };
+
+        if (isValidPartnerEntry(partner)) {
+            partners.push(partner);
         }
     }
 
@@ -490,7 +779,7 @@ async function callAzureLayoutFallback(imageBase64, config) {
     // Try formrecognizer path (older format)
     const analyzeUrl = `${endpoint}/formrecognizer/documentModels/prebuilt-layout:analyze?api-version=2023-07-31`;
 
-    console.log('Trying fallback URL:', analyzeUrl);
+    debugLog('Trying fallback URL:', analyzeUrl);
 
     const submitResponse = await fetch(analyzeUrl, {
         method: 'POST',
@@ -503,10 +792,10 @@ async function callAzureLayoutFallback(imageBase64, config) {
 
     if (!submitResponse.ok) {
         const errorText = await submitResponse.text();
-        console.error('Fallback API Error:', errorText);
+        debugError('Fallback API Error:', errorText);
 
         // Try Computer Vision as last resort
-        console.log('Trying Computer Vision API as last resort...');
+        debugLog('Trying Computer Vision API as last resort...');
         return await callComputerVisionOCR(imageBase64, config);
     }
 
@@ -646,7 +935,7 @@ async function handleImageUpload(event) {
     if (!config.endpoint || config.endpoint === '__AZURE_VISION_ENDPOINT__' ||
         !config.apiKey || config.apiKey === '__AZURE_VISION_API_KEY__') {
         setOcrStatus("OCR not configured. Add secrets to GitHub and redeploy.");
-        console.error("Azure Vision API credentials not configured. Current config:", {
+        debugError("Azure Vision API credentials not configured. Current config:", {
             endpoint: config.endpoint ? (config.endpoint.includes('__') ? 'PLACEHOLDER' : 'SET') : 'MISSING',
             apiKey: config.apiKey ? (config.apiKey.includes('__') ? 'PLACEHOLDER' : 'SET') : 'MISSING'
         });
@@ -669,7 +958,7 @@ async function handleImageUpload(event) {
         // Check if we got structured table data (from prebuilt-layout)
         if (result && typeof result === 'object' && result.type === 'table_data') {
             // Direct table extraction - partners are already parsed
-            console.log('Using table data extraction, partners:', result.partners);
+            debugLog('Using table data extraction, partners:', result.partners);
             parsed = result.partners.filter(p =>
                 p && p.name && p.name.length > 1 &&
                 !p.name.toLowerCase().includes('total') &&
@@ -707,7 +996,7 @@ async function handleImageUpload(event) {
         clearResults();
         setOcrStatus(`${partners.length} Partner${partners.length !== 1 ? 's' : ''}`);
     } catch (err) {
-        console.error(err);
+        debugError(err);
         setOcrStatus(`Error: ${err.message}. You can still type data manually.`);
     }
 }
@@ -722,7 +1011,7 @@ async function handleImageUpload(event) {
  * - Table cell data extracted separately
  */
 function parseOcrToPartners(text) {
-    console.log('Parsing OCR text:', text);
+    debugLog('Parsing OCR text:', text);
 
     const metadataStrip = stripMetadataTokens(text);
 
@@ -773,37 +1062,37 @@ function parseOcrToPartners(text) {
             }
         }
         if (shouldSkip) {
-            console.log('Skipping line:', line);
+            debugLog('Skipping line:', line);
             continue;
         }
 
         // Skip metadata lines that were merged into partner text
         if (line.length > 120 && /(executed|time period|store number|data disclaimer)/i.test(line)) {
-            console.log('Skipping merged metadata line:', line);
+            debugLog('Skipping merged metadata line:', line);
             continue;
         }
 
         // Skip metadata lines that were merged into partner text
         if (line.length > 120 && /(executed|time period|store number|data disclaimer)/i.test(line)) {
-            console.log('Skipping merged metadata line:', line);
+            debugLog('Skipping merged metadata line:', line);
             continue;
         }
 
         const cleanedLine = stripMetadataTokens(line);
 
         if (!cleanedLine || cleanedLine.length < 3) {
-            console.log('Line reduced to metadata only, skipping:', line);
+            debugLog('Line reduced to metadata only, skipping:', line);
             continue;
         }
 
-        console.log('Processing line:', cleanedLine);
+        debugLog('Processing line:', cleanedLine);
 
         // Pattern 1: Full Starbucks format with 5-digit store number
         // "69600 Ailuogwemhe, Jodie O US37008498 9.22"
         let match = cleanedLine.match(/^(\d{5})\s+(.+?)\s+(US\d+)\s+(\d+\.?\d*)$/i);
         if (match) {
             const entry = { name: match[2].trim(), number: match[3], hours: parseFloat(match[4]) };
-            console.log('Pattern 1 match:', entry);
+            debugLog('Pattern 1 match:', entry);
             if (entry.name && isFinite(entry.hours)) {
                 addEntry(entry);
                 continue;
@@ -815,7 +1104,7 @@ function parseOcrToPartners(text) {
         match = cleanedLine.match(/^(.+?)\s+(US\d+)\s+(\d+\.?\d*)$/i);
         if (match) {
             const entry = { name: match[1].trim(), number: match[2], hours: parseFloat(match[3]) };
-            console.log('Pattern 2 match:', entry);
+            debugLog('Pattern 2 match:', entry);
             if (entry.name && !entry.name.match(/^\d{5}$/) && isFinite(entry.hours)) {
                 addEntry(entry);
                 continue;
@@ -827,7 +1116,7 @@ function parseOcrToPartners(text) {
         match = cleanedLine.match(/^(.+?)\s+(\d{6,})\s+(\d+\.?\d*)$/);
         if (match) {
             const entry = { name: match[1].trim(), number: match[2], hours: parseFloat(match[3]) };
-            console.log('Pattern 3 match:', entry);
+            debugLog('Pattern 3 match:', entry);
             if (entry.name && isFinite(entry.hours)) {
                 addEntry(entry);
                 continue;
@@ -843,7 +1132,7 @@ function parseOcrToPartners(text) {
             // Exclude if name is just numbers or a store number
             if (nameCandidate && !/^\d+$/.test(nameCandidate) && isFinite(hours) && hours > 0 && hours < 200) {
                 const entry = { name: nameCandidate, number: "", hours };
-                console.log('Pattern 4 match:', entry);
+                debugLog('Pattern 4 match:', entry);
                 addEntry(entry);
                 continue;
             }
@@ -883,7 +1172,7 @@ function parseOcrToPartners(text) {
 
                     if (name && name.length > 1 && nameTokens.length <= 6 && !/^\d+$/.test(name)) {
                         const entry = { name, number, hours };
-                        console.log('Pattern 5 match:', entry);
+                        debugLog('Pattern 5 match:', entry);
                         addEntry(entry);
                     }
                 }
@@ -895,12 +1184,12 @@ function parseOcrToPartners(text) {
     if (parsed.length === 0) {
         const fallbackEntries = parseByTokenBuckets(metadataStrip, metadataTokens);
         if (fallbackEntries.length > 0) {
-            console.log('Fallback token parse results:', fallbackEntries);
+            debugLog('Fallback token parse results:', fallbackEntries);
             fallbackEntries.forEach(addEntry);
         }
     }
 
-    console.log('Parsed results:', parsed);
+    debugLog('Parsed results:', parsed);
     return parsed;
 }
 
