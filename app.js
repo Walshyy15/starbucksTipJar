@@ -66,6 +66,46 @@ function stripMetadataTokens(text) {
 }
 
 /**
+ * Clean partner name by removing dates, timestamps, and prefix symbols
+ * Ensures all partner names use the exact same clean format
+ * @param {string} name - Raw partner name from OCR
+ * @returns {string} Cleaned partner name
+ */
+function cleanPartnerName(name) {
+    if (!name || typeof name !== 'string') return '';
+
+    let cleaned = name;
+
+    // Remove date patterns (various formats)
+    // MM/DD/YYYY, M/D/YY, MM-DD-YYYY, etc.
+    cleaned = cleaned.replace(/\b\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}\b/g, '');
+
+    // Remove date ranges (MM/DD/YYYY - MM/DD/YYYY or similar)
+    cleaned = cleaned.replace(/\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}\s*[-–—]\s*\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/g, '');
+
+    // Remove timestamps (HH:MM:SS or HH:MM)
+    cleaned = cleaned.replace(/\b\d{1,2}:\d{2}(:\d{2})?\s*(AM|PM|am|pm)?\b/g, '');
+
+    // Remove ISO-style dates (YYYY-MM-DD)
+    cleaned = cleaned.replace(/\b\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}\b/g, '');
+
+    // Remove month name dates (e.g., "Dec 13, 2025" or "December 2025")
+    cleaned = cleaned.replace(/\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2},?\s*\d{2,4}\b/gi, '');
+    cleaned = cleaned.replace(/\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s*\d{2,4}\b/gi, '');
+
+    // Remove leading prefix symbols: ~, =, -, *, •, >, », etc.
+    cleaned = cleaned.replace(/^[\s~=\-\*•·>»→|:]+/, '');
+
+    // Remove trailing prefix symbols
+    cleaned = cleaned.replace(/[\s~=\-\*•·>»→|:]+$/, '');
+
+    // Normalize multiple spaces to single space
+    cleaned = cleaned.replace(/\s+/g, ' ').trim();
+
+    return cleaned;
+}
+
+/**
  * Parse by splitting into potential partner entries using token buckets
  * Fallback method when line-by-line parsing fails
  */
@@ -103,7 +143,7 @@ function parseByTokenBuckets(text, tokensToSkip) {
                     const name = currentEntry.nameTokens.join(' ').trim();
                     if (name && name.length > 1 && !/^\d+$/.test(name)) {
                         entries.push({
-                            name: name,
+                            name: cleanPartnerName(name),
                             number: currentEntry.number,
                             hours: currentEntry.hours
                         });
@@ -515,7 +555,7 @@ function detectColumnHeaders(headerRow) {
             const hours = parseHoursValue(hoursStr);
 
             return {
-                name: name.trim(),
+                name: cleanPartnerName(name.trim()),
                 number: number.trim(),
                 hours: hours,
                 store: store.trim()
@@ -640,6 +680,7 @@ function isValidPartnerEntry(partner) {
     if (!partner || !partner.name) return false;
 
     const nameLower = partner.name.toLowerCase();
+    const nameTrimmed = partner.name.trim();
 
     // Skip header-like rows
     if (nameLower.includes('partner name') ||
@@ -657,12 +698,28 @@ function isValidPartnerEntry(partner) {
     }
 
     // Skip if name is too short
-    if (partner.name.trim().length < 2) {
+    if (nameTrimmed.length < 2) {
         return false;
     }
 
     // Skip if name is just numbers (probably a store number in wrong column)
-    if (/^\d+$/.test(partner.name.trim())) {
+    if (/^\d+$/.test(nameTrimmed)) {
+        return false;
+    }
+
+    // Skip if name looks like a date (MM/DD/YYYY, YYYY-MM-DD, etc.)
+    if (/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}$/.test(nameTrimmed) ||
+        /^\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}$/.test(nameTrimmed)) {
+        return false;
+    }
+
+    // Skip if name is a date range
+    if (/\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}\s*[-–—]\s*\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/.test(nameTrimmed)) {
+        return false;
+    }
+
+    // Skip if name starts with common date/range prefixes
+    if (/^[\s~=\-\*•·>»→|:]+$/.test(nameTrimmed)) {
         return false;
     }
 
@@ -694,7 +751,7 @@ function extractWithFixedColumns(cellsByRow, rowCount) {
         // Arrangement 1: Store(0), Name(1), Number(2), Hours(3)
         partner = {
             store: rowCells.get(0) || '',
-            name: rowCells.get(1) || '',
+            name: cleanPartnerName(rowCells.get(1) || ''),
             number: rowCells.get(2) || '',
             hours: parseHoursValue(rowCells.get(3) || '0')
         };
@@ -707,7 +764,7 @@ function extractWithFixedColumns(cellsByRow, rowCount) {
         // Arrangement 2: Name(0), Number(1), Hours(2)
         partner = {
             store: '',
-            name: rowCells.get(0) || '',
+            name: cleanPartnerName(rowCells.get(0) || ''),
             number: rowCells.get(1) || '',
             hours: parseHoursValue(rowCells.get(2) || '0')
         };
@@ -720,7 +777,7 @@ function extractWithFixedColumns(cellsByRow, rowCount) {
         // Arrangement 3: Name(0), Hours(1)
         partner = {
             store: '',
-            name: rowCells.get(0) || '',
+            name: cleanPartnerName(rowCells.get(0) || ''),
             number: '',
             hours: parseHoursValue(rowCells.get(1) || '0')
         };
@@ -1054,7 +1111,7 @@ function parseOcrToPartners(text) {
         // "69600 Ailuogwemhe, Jodie O US37008498 9.22"
         let match = cleanedLine.match(/^(\d{5})\s+(.+?)\s+(US\d+)\s+(\d+\.?\d*)$/i);
         if (match) {
-            const entry = { name: match[2].trim(), number: match[3], hours: parseFloat(match[4]) };
+            const entry = { name: cleanPartnerName(match[2].trim()), number: match[3], hours: parseFloat(match[4]) };
             debugLog('Pattern 1 match:', entry);
             if (entry.name && isFinite(entry.hours)) {
                 addEntry(entry);
@@ -1066,7 +1123,7 @@ function parseOcrToPartners(text) {
         // "Ailuogwemhe, Jodie O US37008498 9.22"
         match = cleanedLine.match(/^(.+?)\s+(US\d+)\s+(\d+\.?\d*)$/i);
         if (match) {
-            const entry = { name: match[1].trim(), number: match[2], hours: parseFloat(match[3]) };
+            const entry = { name: cleanPartnerName(match[1].trim()), number: match[2], hours: parseFloat(match[3]) };
             debugLog('Pattern 2 match:', entry);
             if (entry.name && !entry.name.match(/^\d{5}$/) && isFinite(entry.hours)) {
                 addEntry(entry);
@@ -1078,7 +1135,7 @@ function parseOcrToPartners(text) {
         // "John Doe 1234567 32.56"  
         match = cleanedLine.match(/^(.+?)\s+(\d{6,})\s+(\d+\.?\d*)$/);
         if (match) {
-            const entry = { name: match[1].trim(), number: match[2], hours: parseFloat(match[3]) };
+            const entry = { name: cleanPartnerName(match[1].trim()), number: match[2], hours: parseFloat(match[3]) };
             debugLog('Pattern 3 match:', entry);
             if (entry.name && isFinite(entry.hours)) {
                 addEntry(entry);
@@ -1094,7 +1151,7 @@ function parseOcrToPartners(text) {
             const hours = parseFloat(match[2]);
             // Exclude if name is just numbers or a store number
             if (nameCandidate && !/^\d+$/.test(nameCandidate) && isFinite(hours) && hours > 0 && hours < 200) {
-                const entry = { name: nameCandidate, number: "", hours };
+                const entry = { name: cleanPartnerName(nameCandidate), number: "", hours };
                 debugLog('Pattern 4 match:', entry);
                 addEntry(entry);
                 continue;
@@ -1134,7 +1191,7 @@ function parseOcrToPartners(text) {
                     const name = nameTokens.join(" ").trim();
 
                     if (name && name.length > 1 && nameTokens.length <= 6 && !/^\d+$/.test(name)) {
-                        const entry = { name, number, hours };
+                        const entry = { name: cleanPartnerName(name), number, hours };
                         debugLog('Pattern 5 match:', entry);
                         addEntry(entry);
                     }
