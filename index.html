@@ -3,10 +3,17 @@
 
 <head>
     <meta charset="UTF-8" />
-    <title>TipJar - Partner Tips Distribution</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="description" content="Calculate and distribute partner tips fairly using OCR technology." />
-    <meta name="theme-color" content="#0f2420" />
+    <title>TipJar - Starbucks Partner Tips Distribution</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, viewport-fit=cover" />
+    <meta name="description"
+        content="Calculate and distribute partner tips fairly using intelligent OCR technology. Designed for Starbucks partners." />
+    <meta name="theme-color" content="#1E3932" />
+    <meta name="color-scheme" content="dark" />
+
+    <!-- Open Graph / Social -->
+    <meta property="og:title" content="TipJar - Partner Tips Distribution" />
+    <meta property="og:description" content="Fair tip distribution for Starbucks partners." />
+    <meta property="og:type" content="website" />
 
     <!-- Mobile Web App Meta Tags -->
     <meta name="mobile-web-app-capable" content="yes" />
@@ -14,17 +21,11 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="TipJar" />
     <meta name="format-detection" content="telephone=no" />
-
-    <!-- Touch Icons for iOS -->
-    <link rel="apple-touch-icon" href="logo.png" />
-
-    <!-- Prevent zoom on input focus (iOS) -->
     <meta name="HandheldFriendly" content="true" />
 
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <!-- Icons -->
+    <link rel="apple-touch-icon" href="logo.png" />
+    <link rel="icon" type="image/png" href="logo.png" />
 
     <!-- Styles -->
     <link rel="stylesheet" href="styles.css" />
@@ -43,6 +44,13 @@
         <!-- Header -->
         <header class="header">
             <div class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <polygon
+                            points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                    </svg>
+                </div>
                 <span class="logo-text">TipJar</span>
             </div>
         </header>
@@ -60,18 +68,18 @@
                             <line x1="12" y1="3" x2="12" y2="15" />
                         </svg>
                     </div>
-                    <p class="upload-title">Upload your partner hours report</p>
+                    <p class="upload-title">Upload your partner hours report to get started</p>
                     <label class="upload-btn">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                             stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                            <polyline points="17 8 12 3 7 8" />
-                            <line x1="12" y1="3" x2="12" y2="15" />
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                            <circle cx="8.5" cy="8.5" r="1.5" />
+                            <polyline points="21 15 16 10 5 21" />
                         </svg>
                         <span>Upload Report</span>
                         <input id="image-upload" type="file" accept="image/*" />
                     </label>
-                    <p class="upload-hint">Supported: PNG, JPG, JPEG, GIF</p>
+                    <p class="upload-hint">Supports PNG, JPG, JPEG, GIF</p>
                     <div id="ocr-status" class="ocr-status"></div>
                 </section>
 
@@ -80,20 +88,23 @@
                     <div class="section-header">
                         <h2>Partners</h2>
                         <div class="header-actions">
-                            <button id="add-row-btn" type="button" class="btn-icon" title="Add Partner">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            <button id="add-row-btn" type="button" class="btn-icon" title="Add Partner"
+                                aria-label="Add new partner">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                                     stroke-linecap="round" stroke-linejoin="round">
                                     <line x1="12" y1="5" x2="12" y2="19" />
                                     <line x1="5" y1="12" x2="19" y2="12" />
                                 </svg>
                             </button>
                             <button id="clear-table-btn" type="button" class="btn-icon btn-icon-danger"
-                                title="Clear All">
+                                title="Clear All" aria-label="Clear all partners">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                     stroke-linecap="round" stroke-linejoin="round">
                                     <polyline points="3 6 5 6 21 6" />
                                     <path
                                         d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                    <line x1="10" y1="11" x2="10" y2="17" />
+                                    <line x1="14" y1="11" x2="14" y2="17" />
                                 </svg>
                             </button>
                         </div>
@@ -125,28 +136,27 @@
                     <label for="total-tips">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                             stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-                            <line x1="1" y1="10" x2="23" y2="10" />
+                            <polygon
+                                points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                         </svg>
                         Total Tip Amount
                     </label>
                     <div class="input-wrapper">
                         <span class="currency-symbol">$</span>
-                        <input id="total-tips" type="number" min="0" step="0.01" placeholder="0.00" />
+                        <input id="total-tips" type="number" min="0" step="0.01" placeholder="0.00"
+                            aria-label="Total tip amount in dollars" inputmode="decimal" />
                     </div>
                 </div>
                 <div id="hourly-rate-display" class="hourly-rate"></div>
                 <button id="calculate-btn" type="button" class="btn btn-primary btn-large full-width">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
-                        <line x1="8" y1="6" x2="16" y2="6" />
-                        <line x1="8" y1="10" x2="16" y2="10" />
-                        <line x1="8" y1="14" x2="12" y2="14" />
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                        <polyline points="22 4 12 14.01 9 11.01" />
                     </svg>
                     Calculate Distribution
                 </button>
-                <p class="action-hint">Hourly rate truncated to 2 decimals, payouts rounded to nearest dollar.</p>
+                <p class="action-hint">Hourly rate truncated to 2 decimals • Payouts rounded to nearest dollar</p>
             </section>
 
             <!-- Results Section -->
@@ -159,23 +169,35 @@
                     <div class="pill" id="distribution-date"></div>
                 </div>
 
-                <!-- Calculation Summary - matches reference -->
+                <!-- Calculation Summary -->
                 <div class="calc-summary" id="calc-summary">
-                    <div class="calc-summary-title">Calculation:</div>
+                    <div class="calc-summary-title">Reward Calculation</div>
                     <div class="calc-formula" id="calc-formula">Total Tips: $0.00 ÷ Total Hours: 0.00 = $0.00 per hour
                     </div>
                     <div class="bills-needed">
-                        <div class="bills-needed-title">Bills Needed: <span class="bills-hint">(edit to
+                        <div class="bills-needed-title">Bills Needed <span class="bills-hint">(edit to
                                 redistribute)</span></div>
                         <div class="bills-needed-list" id="bills-needed-list">
-                            <label class="bill-edit"><input type="number" id="total-twenties" min="0" value="0" />
-                                <span>× $20</span></label>
-                            <label class="bill-edit"><input type="number" id="total-tens" min="0" value="0" /> <span>×
-                                    $10</span></label>
-                            <label class="bill-edit"><input type="number" id="total-fives" min="0" value="0" /> <span>×
-                                    $5</span></label>
-                            <label class="bill-edit"><input type="number" id="total-ones" min="0" value="0" /> <span>×
-                                    $1</span></label>
+                            <label class="bill-edit">
+                                <input type="number" id="total-twenties" min="0" value="0"
+                                    aria-label="Number of $20 bills" />
+                                <span>× $20</span>
+                            </label>
+                            <label class="bill-edit">
+                                <input type="number" id="total-tens" min="0" value="0"
+                                    aria-label="Number of $10 bills" />
+                                <span>× $10</span>
+                            </label>
+                            <label class="bill-edit">
+                                <input type="number" id="total-fives" min="0" value="0"
+                                    aria-label="Number of $5 bills" />
+                                <span>× $5</span>
+                            </label>
+                            <label class="bill-edit">
+                                <input type="number" id="total-ones" min="0" value="0"
+                                    aria-label="Number of $1 bills" />
+                                <span>× $1</span>
+                            </label>
                         </div>
                     </div>
                 </div>
@@ -187,15 +209,8 @@
 
         <!-- Footer -->
         <footer class="footer">
-            <p>Made by <strong>William Walsh</strong></p>
-            <p class="store-info">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                    <circle cx="12" cy="10" r="3" />
-                </svg>
-                Starbucks Store# 66900
-            </p>
+            <p>Made with ☕ by <strong>William Walsh</strong></p>
+            <p class="store-info">Starbucks Store# 66900</p>
         </footer>
     </div>
 
