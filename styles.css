@@ -701,12 +701,15 @@ body {
 }
 
 .hourly-rate {
-    font-size: 0.8125rem;
-    color: var(--text-muted);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--starbucks-green-light);
     text-align: center;
-    padding: var(--space-2) var(--space-3);
-    background: var(--card-glass);
+    padding: var(--space-3) var(--space-4);
+    background: rgba(0, 117, 74, 0.15);
+    border: 1px solid rgba(0, 168, 98, 0.25);
     border-radius: var(--radius-md);
+    margin-top: var(--space-2);
 }
 
 .hourly-rate:empty {
