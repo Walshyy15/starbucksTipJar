@@ -1514,3 +1514,51 @@ body {
         display: block !important;
     }
 }
+
+/* ============================================
+   FOOTER - Store Link Styling
+   ============================================ */
+.footer {
+    text-align: center;
+    padding: var(--space-4) 0;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
+
+.footer p {
+    margin: var(--space-2) 0;
+}
+
+.footer strong {
+    color: var(--text-primary);
+}
+
+.store-info {
+    margin-top: var(--space-3);
+}
+
+.store-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--text-muted);
+    text-decoration: none;
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-full);
+    background: var(--card-glass);
+    border: 1px solid var(--card-border);
+    transition: all var(--transition-base);
+    font-size: 0.8125rem;
+}
+
+.store-link:hover,
+.store-link:focus {
+    color: var(--starbucks-green-light);
+    background: rgba(0, 168, 98, 0.1);
+    border-color: rgba(0, 168, 98, 0.3);
+    transform: translateY(-1px);
+}
+
+.store-link:active {
+    transform: translateY(0);
+}
