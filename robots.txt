@@ -1,0 +1,34 @@
+# robots.txt for sbuxtips.com
+# Starbucks Tips Calculator - Tip Distribution Tool
+
+# Allow all search engine crawlers
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://sbuxtips.com/sitemap.xml
+
+# Disallow admin/config paths (none currently, but good practice)
+# Disallow: /admin/
+# Disallow: /api/
+
+# Crawl-delay for polite crawling (optional, respected by some bots)
+# Crawl-delay: 1
+
+# Google-specific directives
+User-agent: Googlebot
+Allow: /
+
+# Bing-specific directives  
+User-agent: Bingbot
+Allow: /
+
+# Allow social media crawlers for rich previews
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
