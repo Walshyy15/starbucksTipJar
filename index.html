@@ -234,7 +234,6 @@
                                     <th>Name</th>
                                     <th>Partner #</th>
                                     <th>Hours</th>
-                                    <th class="holiday-col hidden">Holiday Hrs</th>
                                     <th></th>
                                 </tr>
                             </thead>
@@ -267,43 +266,6 @@
                     </div>
                 </div>
                 <div id="hourly-rate-display" class="hourly-rate"></div>
-
-                <!-- Holiday Tips Mode Toggle -->
-                <div class="holiday-mode-toggle">
-                    <label class="toggle-switch" for="holiday-mode">
-                        <input type="checkbox" id="holiday-mode" />
-                        <span class="toggle-slider"></span>
-                    </label>
-                    <div class="toggle-label">
-                        <span class="toggle-title">Holiday Tips Mode</span>
-                        <span class="toggle-hint">Split tips between holiday & regular pools</span>
-                    </div>
-                </div>
-
-                <!-- Holiday Tips Configuration (hidden by default) -->
-                <div id="holiday-config" class="holiday-config hidden">
-                    <div class="holiday-input-group">
-                        <label for="holiday-tips">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20 12v10H4V12"></path>
-                                <path d="M2 7h20v5H2z"></path>
-                                <path d="M12 22V7"></path>
-                                <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path>
-                                <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path>
-                            </svg>
-                            Holiday Tips Pool
-                        </label>
-                        <div class="input-wrapper">
-                            <span class="currency-symbol">$</span>
-                            <input id="holiday-tips" type="number" min="0" step="0.01" placeholder="0.00"
-                                aria-label="Holiday tip pool in dollars" inputmode="decimal" />
-                        </div>
-                    </div>
-                    <p class="holiday-note">Enter the total tips earned on the holiday. Only partners with holiday hours
-                        will share this pool.</p>
-                </div>
-
                 <button id="calculate-btn" type="button" class="btn btn-primary btn-large full-width">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                         stroke-linejoin="round">
