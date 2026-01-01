@@ -22,8 +22,11 @@ function debugLog(...args) {
     }
 }
 
-let partners = []; // { id, name, number, hours }
+let partners = []; // { id, name, number, hours, holidayHours }
 let nextPartnerId = 1;
+
+// Holiday Tips Mode state
+let isHolidayModeEnabled = false;
 
 // Common tokens and headers that should be stripped from OCR output
 const METADATA_PATTERNS = [
@@ -179,6 +182,12 @@ let resultsBody;
 let ocrStatusEl;
 let distributionDateEl;
 
+// Holiday Mode DOM references
+let holidayModeToggle;
+let holidayConfigEl;
+let holidayTipsInput;
+let holidayColHeaders;
+
 // Azure AI Vision API Configuration
 function getAzureConfig() {
     const config = window.AZURE_CONFIG || {};
@@ -196,6 +205,12 @@ document.addEventListener("DOMContentLoaded", () => {
     resultsBody = document.getElementById("results-body");
     ocrStatusEl = document.getElementById("ocr-status");
     distributionDateEl = document.getElementById("distribution-date");
+
+    // Holiday Mode elements
+    holidayModeToggle = document.getElementById("holiday-mode");
+    holidayConfigEl = document.getElementById("holiday-config");
+    holidayTipsInput = document.getElementById("holiday-tips");
+    holidayColHeaders = document.querySelectorAll(".holiday-col");
 
     const uploadInput = document.getElementById("image-upload");
     const addRowBtn = document.getElementById("add-row-btn");
@@ -224,6 +239,21 @@ document.addEventListener("DOMContentLoaded", () => {
             input.addEventListener('input', redistributeBills);
         }
     });
+
+    // Holiday Mode toggle listener
+    if (holidayModeToggle) {
+        holidayModeToggle.addEventListener('change', handleHolidayModeToggle);
+    }
+
+    // Holiday tips input - recalculate on change
+    if (holidayTipsInput) {
+        holidayTipsInput.addEventListener('input', () => {
+            // If already calculated, recalculate with new holiday tips
+            if (lastCalculationResults.length > 0) {
+                runCalculations();
+            }
+        });
+    }
 
     // Check Azure configuration
     const config = getAzureConfig();
@@ -1009,6 +1039,7 @@ async function handleImageUpload(event) {
             name: p.name,
             number: p.number || '',
             hours: p.hours || 0,
+            holidayHours: 0,
         }));
 
         renderPartnerTable();
@@ -1221,6 +1252,7 @@ function addEmptyPartnerRow() {
         name: "",
         number: "",
         hours: 0,
+        holidayHours: 0,
     });
 }
 
@@ -1228,9 +1260,28 @@ function renderPartnerTable() {
     if (!partnerTableBody) return;
     partnerTableBody.innerHTML = "";
 
+    const showHolidayCol = isHolidayModeEnabled;
+    const holidayColClass = showHolidayCol ? 'holiday-col' : 'holiday-col hidden';
+
     partners.forEach((p) => {
         const tr = document.createElement("tr");
         tr.dataset.partnerId = String(p.id);
+
+        // Build holiday hours cell HTML
+        const holidayHoursCell = `
+      <td class="${holidayColClass}">
+        <input
+          type="number"
+          class="cell-input holiday-hours"
+          data-field="holidayHours"
+          min="0"
+          step="0.01"
+          max="${p.hours || 999}"
+          value="${p.holidayHours ? p.holidayHours : ''}"
+          placeholder="0.00"
+          inputmode="decimal"
+        />
+      </td>`;
 
         tr.innerHTML = `
       <td>
@@ -1262,6 +1313,7 @@ function renderPartnerTable() {
           placeholder="0.00"
         />
       </td>
+      ${holidayHoursCell}
       <td style="text-align:right;">
         <button class="icon-button" type="button" title="Remove partner" data-action="delete" aria-label="Remove partner">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1302,7 +1354,24 @@ function handlePartnerInputChange(event) {
     } else if (field === "hours") {
         const v = parseFloat(input.value);
         partner.hours = isFinite(v) && v >= 0 ? v : 0;
+        // If holiday hours exceed total hours, cap them
+        if (partner.holidayHours > partner.hours) {
+            partner.holidayHours = partner.hours;
+        }
         updateTotalHours();
+        // Real-time recalculation if results are visible
+        if (lastCalculationResults.length > 0) {
+            runCalculations();
+        }
+    } else if (field === "holidayHours") {
+        const v = parseFloat(input.value);
+        const maxHours = partner.hours || 0;
+        // Cap holiday hours at total hours
+        partner.holidayHours = isFinite(v) && v >= 0 ? Math.min(v, maxHours) : 0;
+        // Real-time recalculation
+        if (lastCalculationResults.length > 0) {
+            runCalculations();
+        }
     }
 }
 
@@ -1363,6 +1432,38 @@ function breakdownBills(amountWholeDollars) {
 
 // ---------- MAIN CALCULATION ----------
 
+/**
+ * Handle Holiday Mode toggle
+ * Shows/hides holiday configuration panel and holiday hours column
+ */
+function handleHolidayModeToggle() {
+    isHolidayModeEnabled = holidayModeToggle.checked;
+
+    // Toggle holiday config visibility
+    if (holidayConfigEl) {
+        holidayConfigEl.classList.toggle('hidden', !isHolidayModeEnabled);
+    }
+
+    // Toggle holiday column in table header
+    holidayColHeaders.forEach(col => {
+        col.classList.toggle('hidden', !isHolidayModeEnabled);
+    });
+
+    // Add/remove holiday-mode-active class for mobile CSS
+    const partnersCard = document.querySelector('.partners-card');
+    if (partnersCard) {
+        partnersCard.classList.toggle('holiday-mode-active', isHolidayModeEnabled);
+    }
+
+    // Re-render table to show/hide holiday hours column
+    renderPartnerTable();
+
+    // Clear results when toggling mode
+    clearResults();
+
+    debugLog('Holiday Mode:', isHolidayModeEnabled ? 'ENABLED' : 'DISABLED');
+}
+
 function runCalculations() {
     clearResults();
 
@@ -1372,6 +1473,13 @@ function runCalculations() {
         return;
     }
 
+    // If holiday mode is enabled, use holiday calculation logic
+    if (isHolidayModeEnabled) {
+        runHolidayCalculations(totalTipsVal);
+        return;
+    }
+
+    // Standard calculation (non-holiday mode)
     const totalHours = partners.reduce((sum, p) => {
         const h = typeof p.hours === "number" ? p.hours : parseFloat(p.hours);
         if (isFinite(h)) return sum + h;
@@ -1443,6 +1551,287 @@ function runCalculations() {
         totalHours,
         totalsBills
     );
+}
+
+/**
+ * Holiday Mode Calculations
+ * Splits tips into two pools:
+ * - Holiday Pool: Only for partners who worked on the holiday
+ * - Regular Pool: For all partners based on adjusted hours (total - holiday)
+ */
+function runHolidayCalculations(totalTipsVal) {
+    const holidayTipsVal = parseFloat(holidayTipsInput?.value) || 0;
+
+    // Regular tips = Total tips - Holiday tips
+    const regularTipsVal = Math.max(0, totalTipsVal - holidayTipsVal);
+
+    // Calculate total hours and holiday hours
+    let totalHolidayHours = 0;
+    let totalAdjustedHours = 0;
+
+    partners.forEach(p => {
+        const hours = typeof p.hours === "number" ? p.hours : parseFloat(p.hours);
+        const safeHours = isFinite(hours) && hours > 0 ? hours : 0;
+
+        const holidayHours = typeof p.holidayHours === "number" ? p.holidayHours : parseFloat(p.holidayHours);
+        const safeHolidayHours = isFinite(holidayHours) && holidayHours > 0 ? Math.min(holidayHours, safeHours) : 0;
+
+        const adjustedHours = safeHours - safeHolidayHours;
+
+        totalHolidayHours += safeHolidayHours;
+        totalAdjustedHours += adjustedHours;
+    });
+
+    // Validate we have hours to work with
+    if (totalAdjustedHours <= 0 && totalHolidayHours <= 0) {
+        alert("Total tippable hours must be greater than zero.");
+        return;
+    }
+
+    // Calculate hourly rates
+    const holidayHourlyRate = totalHolidayHours > 0 ? truncateToTwoDecimals(holidayTipsVal / totalHolidayHours) : 0;
+    const regularHourlyRate = totalAdjustedHours > 0 ? truncateToTwoDecimals(regularTipsVal / totalAdjustedHours) : 0;
+
+    // Update hourly rate display with combined info
+    if (hourlyRateDisplay) {
+        if (holidayTipsVal > 0 && totalHolidayHours > 0) {
+            hourlyRateDisplay.innerHTML = `
+                <div style="display:flex;flex-direction:column;gap:4px;text-align:left;font-size:0.875rem;">
+                    <span style="color:#FF5722;">🎁 Holiday: $${holidayHourlyRate.toFixed(2)}/hr</span>
+                    <span style="color:var(--starbucks-green-light);">☕ Regular: $${regularHourlyRate.toFixed(2)}/hr</span>
+                </div>
+            `;
+        } else {
+            hourlyRateDisplay.textContent = `$${regularHourlyRate.toFixed(2)} per hour`;
+        }
+    }
+
+    // Calculate per-partner payouts
+    const results = [];
+    let sumHolidayPayout = 0;
+    let sumRegularPayout = 0;
+    let sumTotalPayout = 0;
+    const totalsBills = { twenties: 0, tens: 0, fives: 0, ones: 0 };
+
+    partners.forEach(p => {
+        const hours = typeof p.hours === "number" ? p.hours : parseFloat(p.hours);
+        const safeHours = isFinite(hours) && hours > 0 ? hours : 0;
+
+        const holidayHours = typeof p.holidayHours === "number" ? p.holidayHours : parseFloat(p.holidayHours);
+        const safeHolidayHours = isFinite(holidayHours) && holidayHours > 0 ? Math.min(holidayHours, safeHours) : 0;
+
+        const adjustedHours = safeHours - safeHolidayHours;
+
+        // Holiday tip share
+        let holidayTip = 0;
+        let holidayPayout = 0;
+        if (safeHolidayHours > 0 && totalHolidayHours > 0) {
+            const holidayShare = (safeHolidayHours / totalHolidayHours) * holidayTipsVal;
+            holidayTip = roundToTwoDecimals(holidayHourlyRate * safeHolidayHours);
+            holidayPayout = holidayTip > 0 ? Math.round(holidayTip + 1e-8) : 0;
+        }
+
+        // Regular tip share
+        let regularTip = 0;
+        let regularPayout = 0;
+        if (adjustedHours > 0 && totalAdjustedHours > 0) {
+            regularTip = roundToTwoDecimals(regularHourlyRate * adjustedHours);
+            regularPayout = regularTip > 0 ? Math.round(regularTip + 1e-8) : 0;
+        }
+
+        // Combined payout
+        const totalPayout = holidayPayout + regularPayout;
+        const breakdown = breakdownBills(totalPayout);
+
+        sumHolidayPayout += holidayPayout;
+        sumRegularPayout += regularPayout;
+        sumTotalPayout += totalPayout;
+        totalsBills.twenties += breakdown.twenties;
+        totalsBills.tens += breakdown.tens;
+        totalsBills.fives += breakdown.fives;
+        totalsBills.ones += breakdown.ones;
+
+        results.push({
+            name: p.name || "",
+            number: p.number || "",
+            hours: safeHours,
+            holidayHours: safeHolidayHours,
+            adjustedHours,
+            holidayTip,
+            holidayPayout,
+            regularTip,
+            regularPayout,
+            totalPayout,
+            breakdown
+        });
+    });
+
+    // Store results for redistribution
+    lastCalculationResults = results;
+    lastHourlyRate = regularHourlyRate;
+
+    // Render holiday-specific results
+    renderHolidayResultsTable(results, holidayHourlyRate, regularHourlyRate, holidayTipsVal, regularTipsVal);
+    renderHolidaySummary(
+        holidayHourlyRate,
+        regularHourlyRate,
+        holidayTipsVal,
+        regularTipsVal,
+        totalHolidayHours,
+        totalAdjustedHours,
+        sumHolidayPayout,
+        sumRegularPayout,
+        totalsBills
+    );
+}
+
+/**
+ * Render results table for Holiday Mode
+ * Shows combined view with holiday and regular breakdowns per partner
+ */
+function renderHolidayResultsTable(results, holidayHourlyRate, regularHourlyRate, holidayPool, regularPool) {
+    const resultsSection = document.getElementById('results-section');
+    if (!resultsBody) return;
+    resultsBody.innerHTML = "";
+
+    // Create partner cards with holiday + regular breakdown
+    results.forEach(r => {
+        const card = document.createElement("div");
+        card.className = "partner-total-card";
+        const safeName = escapeHtml(r.name || "Partner");
+
+        // Build bill chips
+        const chips = [];
+        if (r.breakdown.twenties > 0) chips.push(`${r.breakdown.twenties}×$20`);
+        if (r.breakdown.tens > 0) chips.push(`${r.breakdown.tens}×$10`);
+        if (r.breakdown.fives > 0) chips.push(`${r.breakdown.fives}×$5`);
+        if (r.breakdown.ones > 0) chips.push(`${r.breakdown.ones}×$1`);
+        const billChipsHtml = chips.map(c => `<span class="bill-chip">${c}</span>`).join('');
+
+        // Holiday breakdown row (only if they have holiday hours)
+        let holidayRowHtml = '';
+        if (r.holidayHours > 0) {
+            holidayRowHtml = `
+                <div class="partner-breakdown-row">
+                    <span class="partner-breakdown-label holiday">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 12v10H4V12"></path>
+                            <path d="M2 7h20v5H2z"></path>
+                            <path d="M12 22V7"></path>
+                        </svg>
+                        Holiday (${r.holidayHours.toFixed(2)} hrs × $${holidayHourlyRate.toFixed(2)})
+                    </span>
+                    <span class="partner-breakdown-value">$${r.holidayPayout}</span>
+                </div>
+            `;
+        }
+
+        // Regular breakdown row (only if they have adjusted hours)
+        let regularRowHtml = '';
+        if (r.adjustedHours > 0) {
+            regularRowHtml = `
+                <div class="partner-breakdown-row">
+                    <span class="partner-breakdown-label regular">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+                            <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
+                            <line x1="6" y1="1" x2="6" y2="4"></line>
+                            <line x1="10" y1="1" x2="10" y2="4"></line>
+                            <line x1="14" y1="1" x2="14" y2="4"></line>
+                        </svg>
+                        Regular (${r.adjustedHours.toFixed(2)} hrs × $${regularHourlyRate.toFixed(2)})
+                    </span>
+                    <span class="partner-breakdown-value">$${r.regularPayout}</span>
+                </div>
+            `;
+        }
+
+        card.innerHTML = `
+            <div class="partner-total-header">
+                <span class="partner-total-name">${safeName}</span>
+                <span class="partner-total-amount">$${r.totalPayout}</span>
+            </div>
+            <div class="partner-hours" style="margin:-8px 0 4px 0;font-size:0.8125rem;color:var(--text-muted);">
+                ${r.hours.toFixed(2)} total hours
+            </div>
+            ${holidayRowHtml}
+            ${regularRowHtml}
+            <div class="bill-chips" style="margin-top:4px;">${billChipsHtml}</div>
+        `;
+
+        resultsBody.appendChild(card);
+    });
+
+    // Show results section
+    if (resultsSection) {
+        resultsSection.classList.add('visible');
+    }
+}
+
+/**
+ * Render summary for Holiday Mode
+ */
+function renderHolidaySummary(
+    holidayHourlyRate,
+    regularHourlyRate,
+    holidayPool,
+    regularPool,
+    totalHolidayHours,
+    totalAdjustedHours,
+    sumHolidayPayout,
+    sumRegularPayout,
+    totalsBills
+) {
+    // Update calc formula with holiday mode details
+    const calcFormula = document.getElementById('calc-formula');
+    if (calcFormula) {
+        const totalPool = holidayPool + regularPool;
+        const totalPayout = sumHolidayPayout + sumRegularPayout;
+
+        let formulaHtml = `<div style="display:flex;flex-direction:column;gap:8px;">`;
+
+        if (holidayPool > 0 && totalHolidayHours > 0) {
+            formulaHtml += `
+                <div style="color:#FF5722;">
+                    🎁 Holiday Pool: $${holidayPool.toFixed(2)} ÷ ${totalHolidayHours.toFixed(2)} hrs = <strong>$${holidayHourlyRate.toFixed(2)}/hr</strong>
+                </div>
+            `;
+        }
+
+        if (regularPool > 0 && totalAdjustedHours > 0) {
+            formulaHtml += `
+                <div style="color:var(--starbucks-green-light);">
+                    ☕ Regular Pool: $${regularPool.toFixed(2)} ÷ ${totalAdjustedHours.toFixed(2)} hrs = <strong>$${regularHourlyRate.toFixed(2)}/hr</strong>
+                </div>
+            `;
+        }
+
+        formulaHtml += `
+            <div style="border-top:1px solid var(--card-border);padding-top:8px;margin-top:4px;">
+                Total Distribution: <strong>$${totalPayout}</strong>
+            </div>
+        </div>`;
+
+        calcFormula.innerHTML = formulaHtml;
+    }
+
+    // Update editable bill input fields
+    const twentiesInput = document.getElementById('total-twenties');
+    const tensInput = document.getElementById('total-tens');
+    const fivesInput = document.getElementById('total-fives');
+    const onesInput = document.getElementById('total-ones');
+
+    if (twentiesInput) twentiesInput.value = totalsBills.twenties;
+    if (tensInput) tensInput.value = totalsBills.tens;
+    if (fivesInput) fivesInput.value = totalsBills.fives;
+    if (onesInput) onesInput.value = totalsBills.ones;
+
+    // Update distribution date
+    if (distributionDateEl) {
+        const now = new Date();
+        const options = { month: 'short', day: 'numeric', year: 'numeric' };
+        distributionDateEl.textContent = now.toLocaleDateString('en-US', options);
+    }
 }
 
 function clearResults() {
