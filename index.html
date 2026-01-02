@@ -56,6 +56,8 @@
 
     <!-- Styles -->
     <link rel="stylesheet" href="styles.css" />
+    <!-- Holiday Dashboard Styles (separate module) -->
+    <link rel="stylesheet" href="holiday-dashboard.css" />
 
     <!-- Structured Data: WebApplication -->
     <script type="application/ld+json">
@@ -162,13 +164,6 @@
         <!-- Header -->
         <header class="header">
             <div class="logo">
-                <div class="logo-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <polygon
-                            points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                    </svg>
-                </div>
                 <span class="logo-text">TipJar</span>
             </div>
         </header>
@@ -277,6 +272,16 @@
 
             </section>
 
+            <!-- Holiday Tips Toggle Button -->
+            <button class="holiday-toggle-btn" id="holiday-toggle-btn" type="button" onclick="HolidayDashboard.open()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <polygon
+                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+                <span>Holiday Tips</span>
+            </button>
+
             <!-- Results Section -->
             <section class="card results-card" id="results-section">
                 <div class="section-header">
@@ -338,6 +343,8 @@
 
     <!-- App logic -->
     <script src="app.js"></script>
+    <!-- Holiday Dashboard Module (separate add-on) -->
+    <script src="holiday-dashboard.js"></script>
 </body>
 
 </html>
