@@ -1,0 +1,845 @@
+/* ============================================
+   Holiday Automation Dashboard - Beta Feature
+   Completely isolated styles for the holiday split feature
+   ============================================ */
+
+/* ============================================
+   TOGGLE BUTTON - Entry point for Beta mode
+   ============================================ */
+
+.holiday-toggle-container {
+    display: flex;
+    justify-content: center;
+    margin: var(--space-4) 0;
+}
+
+.holiday-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-5);
+    background: linear-gradient(135deg, rgba(255, 152, 0, 0.15) 0%, rgba(255, 193, 7, 0.1) 100%);
+    border: 1px solid rgba(255, 152, 0, 0.4);
+    border-radius: var(--radius-full);
+    color: #FFC107;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    position: relative;
+    overflow: hidden;
+}
+
+.holiday-toggle-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: radial-gradient(circle, rgba(255, 193, 7, 0.3) 0%, transparent 70%);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.5s, height 0.5s;
+}
+
+.holiday-toggle-btn:hover::before {
+    width: 200px;
+    height: 200px;
+}
+
+.holiday-toggle-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(255, 152, 0, 0.3);
+    border-color: rgba(255, 193, 7, 0.6);
+}
+
+.holiday-toggle-btn svg {
+    width: 18px;
+    height: 18px;
+    position: relative;
+    z-index: 1;
+}
+
+.holiday-toggle-btn span {
+    position: relative;
+    z-index: 1;
+}
+
+.beta-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    background: rgba(255, 152, 0, 0.3);
+    border-radius: var(--radius-full);
+    font-size: 0.625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #FFD54F;
+    position: relative;
+    z-index: 1;
+}
+
+/* ============================================
+   HOLIDAY DASHBOARD MODAL/OVERLAY
+   ============================================ */
+
+.holiday-dashboard-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.9);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 1000;
+    display: none;
+    overflow-y: auto;
+    padding: var(--space-4);
+    padding-bottom: calc(var(--space-8) + env(safe-area-inset-bottom, 0px));
+}
+
+.holiday-dashboard-overlay.active {
+    display: block;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.holiday-dashboard {
+    max-width: 1200px;
+    margin: 0 auto;
+    min-height: 100%;
+}
+
+/* ============================================
+   DASHBOARD HEADER
+   ============================================ */
+
+.holiday-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-4) 0;
+    margin-bottom: var(--space-5);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.holiday-header-left {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.holiday-logo {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.holiday-logo-icon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #FF9800 0%, #FFC107 100%);
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(255, 152, 0, 0.4);
+}
+
+.holiday-logo-icon svg {
+    width: 24px;
+    height: 24px;
+    color: #1a1a1a;
+}
+
+.holiday-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #FFD54F 0%, #FF9800 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.holiday-subtitle {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.holiday-close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-full);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.holiday-close-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    transform: rotate(90deg);
+}
+
+.holiday-close-btn svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* ============================================
+   SPLIT VIEW LAYOUT - Flexbox/Grid Responsive
+   ============================================ */
+
+.holiday-split-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-5);
+    margin-bottom: var(--space-5);
+}
+
+@media (max-width: 900px) {
+    .holiday-split-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ============================================
+   PERIOD CARD (Week 1 / Week 2)
+   ============================================ */
+
+.holiday-period-card {
+    background: var(--card-glass);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-5);
+    position: relative;
+    overflow: hidden;
+}
+
+.holiday-period-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+}
+
+.holiday-period-card.week-1::before {
+    background: linear-gradient(90deg, #00A862 0%, #00754A 100%);
+}
+
+.holiday-period-card.week-2::before {
+    background: linear-gradient(90deg, #FF9800 0%, #FFC107 100%);
+}
+
+.period-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-4);
+}
+
+.period-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.period-number {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.875rem;
+}
+
+.week-1 .period-number {
+    background: rgba(0, 168, 98, 0.2);
+    color: #00A862;
+}
+
+.week-2 .period-number {
+    background: rgba(255, 152, 0, 0.2);
+    color: #FF9800;
+}
+
+.period-label {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.period-date-range {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.05);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-full);
+}
+
+/* ============================================
+   DUAL UPLOAD ZONES
+   ============================================ */
+
+.holiday-upload-zone {
+    border: 2px dashed rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    text-align: center;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    margin-bottom: var(--space-4);
+}
+
+.holiday-upload-zone:hover {
+    border-color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.holiday-upload-zone.dragover {
+    border-color: var(--starbucks-green-light);
+    background: rgba(0, 168, 98, 0.05);
+}
+
+.holiday-upload-zone.has-file {
+    border-style: solid;
+    border-color: var(--starbucks-green-light);
+    background: rgba(0, 168, 98, 0.05);
+}
+
+.holiday-upload-zone input[type="file"] {
+    display: none;
+}
+
+.holiday-upload-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto var(--space-3);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    transition: all var(--transition-base);
+}
+
+.holiday-upload-zone:hover .holiday-upload-icon {
+    color: var(--starbucks-green-light);
+    background: rgba(0, 168, 98, 0.1);
+}
+
+.holiday-upload-icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.holiday-upload-text {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--space-2);
+}
+
+.holiday-upload-hint {
+    font-size: 0.75rem;
+    color: var(--text-hint);
+}
+
+.holiday-upload-status {
+    margin-top: var(--space-3);
+    font-size: 0.8125rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+}
+
+.holiday-upload-status.success {
+    color: var(--starbucks-green-light);
+}
+
+.holiday-upload-status.loading {
+    color: var(--text-muted);
+}
+
+.holiday-upload-status.error {
+    color: var(--error);
+}
+
+/* ============================================
+   CASH INPUT FOR EACH PERIOD
+   ============================================ */
+
+.holiday-cash-input-group {
+    margin-top: var(--space-4);
+}
+
+.holiday-cash-label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: var(--space-2);
+}
+
+.holiday-cash-label svg {
+    width: 16px;
+    height: 16px;
+    color: #FFD54F;
+}
+
+.holiday-cash-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.holiday-cash-input-wrapper .currency-symbol {
+    position: absolute;
+    left: var(--space-4);
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.holiday-cash-input {
+    width: 100%;
+    padding: var(--space-3) var(--space-4);
+    padding-left: var(--space-8);
+    font-size: 1.25rem;
+    font-weight: 600;
+    font-family: inherit;
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-lg);
+    transition: all var(--transition-fast);
+}
+
+.holiday-cash-input:focus {
+    outline: none;
+    border-color: var(--starbucks-green-light);
+    box-shadow: 0 0 0 3px rgba(0, 168, 98, 0.15);
+}
+
+.holiday-cash-input::placeholder {
+    color: var(--text-hint);
+}
+
+/* ============================================
+   PARTNER PREVIEW LIST
+   ============================================ */
+
+.holiday-partners-preview {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-top: var(--space-4);
+    padding: var(--space-3);
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: var(--radius-lg);
+}
+
+.holiday-partners-preview::-webkit-scrollbar {
+    width: 6px;
+}
+
+.holiday-partners-preview::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+}
+
+.holiday-partners-preview::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+}
+
+.holiday-partner-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    transition: background var(--transition-fast);
+}
+
+.holiday-partner-row:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.holiday-partner-name {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    flex: 1;
+}
+
+.holiday-partner-hours {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+
+.holiday-partners-count {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-2) 0;
+    margin-top: var(--space-3);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 0.875rem;
+    color: var(--text-muted);
+}
+
+.holiday-partners-count strong {
+    color: var(--text-primary);
+}
+
+/* ============================================
+   ACTION SECTION
+   ============================================ */
+
+.holiday-action-section {
+    background: var(--card-glass);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-5);
+    margin-bottom: var(--space-5);
+}
+
+.holiday-action-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-4);
+}
+
+.holiday-match-status {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-full);
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+
+.holiday-match-status.matched {
+    background: rgba(0, 168, 98, 0.15);
+    color: #00A862;
+}
+
+.holiday-match-status.partial {
+    background: rgba(255, 152, 0, 0.15);
+    color: #FF9800;
+}
+
+.holiday-match-status.none {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-muted);
+}
+
+.holiday-match-status svg {
+    width: 16px;
+    height: 16px;
+}
+
+.holiday-calculate-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    width: 100%;
+    padding: var(--space-4);
+    font-size: 1rem;
+    font-weight: 600;
+    font-family: inherit;
+    color: var(--bg-primary);
+    background: linear-gradient(135deg, #FF9800 0%, #FFC107 100%);
+    border: none;
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.holiday-calculate-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(255, 152, 0, 0.4);
+}
+
+.holiday-calculate-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.holiday-calculate-btn svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* ============================================
+   RESULTS SECTION - Split Display
+   ============================================ */
+
+.holiday-results-section {
+    display: none;
+}
+
+.holiday-results-section.visible {
+    display: block;
+    animation: slideUp 0.4s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.holiday-results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-5);
+}
+
+.holiday-results-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.holiday-results-date {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    padding: var(--space-1) var(--space-3);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-full);
+}
+
+/* Summary Cards */
+.holiday-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-4);
+    margin-bottom: var(--space-5);
+}
+
+@media (max-width: 700px) {
+    .holiday-summary-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.holiday-summary-card {
+    background: var(--card-glass);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    text-align: center;
+}
+
+.holiday-summary-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin-bottom: var(--space-2);
+}
+
+.holiday-summary-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.holiday-summary-value.rate {
+    color: var(--starbucks-green-light);
+}
+
+/* Partner Results Grid */
+.holiday-partner-results {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--space-4);
+}
+
+.holiday-result-card {
+    background: var(--card-glass);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    transition: all var(--transition-base);
+}
+
+.holiday-result-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.holiday-result-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: var(--space-3);
+}
+
+.holiday-result-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.holiday-result-total {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--starbucks-green-light);
+}
+
+.holiday-result-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.holiday-result-period {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-2) var(--space-3);
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: var(--radius-md);
+    font-size: 0.8125rem;
+}
+
+.holiday-result-period.week-1 {
+    border-left: 3px solid #00A862;
+}
+
+.holiday-result-period.week-2 {
+    border-left: 3px solid #FF9800;
+}
+
+.holiday-result-period-label {
+    color: var(--text-muted);
+}
+
+.holiday-result-period-hours {
+    color: var(--text-secondary);
+}
+
+.holiday-result-period-amount {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.holiday-result-bills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    margin-top: var(--space-3);
+    padding-top: var(--space-3);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.holiday-bill-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--space-1) var(--space-2);
+    background: rgba(0, 168, 98, 0.1);
+    border: 1px solid rgba(0, 168, 98, 0.2);
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--starbucks-green-light);
+}
+
+/* ============================================
+   LOADING SPINNER
+   ============================================ */
+
+.holiday-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ============================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================ */
+
+@media (max-width: 600px) {
+    .holiday-header {
+        flex-direction: column;
+        gap: var(--space-3);
+        text-align: center;
+    }
+
+    .holiday-header-left {
+        flex-direction: column;
+    }
+
+    .holiday-title {
+        font-size: 1.25rem;
+    }
+
+    .holiday-period-card {
+        padding: var(--space-4);
+    }
+
+    .holiday-partner-results {
+        grid-template-columns: 1fr;
+    }
+
+    .holiday-toggle-btn {
+        font-size: 0.8125rem;
+        padding: var(--space-2) var(--space-4);
+    }
+}
+
+/* Print styles for holiday results */
+@media print {
+    .holiday-dashboard-overlay {
+        position: static;
+        background: white;
+    }
+
+    .holiday-close-btn,
+    .holiday-toggle-btn {
+        display: none;
+    }
+
+    .holiday-result-card {
+        break-inside: avoid;
+    }
+}
