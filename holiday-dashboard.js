@@ -2,12 +2,20 @@
  * Holiday Automation Dashboard Module
  * ====================================
  * A completely separate module for handling holiday tip splits.
- * This module does NOT modify or call any functions from the main app.js.
+ * This module READS from the main app.js partners array for Regular Tips,
+ * but NEVER modifies it.
+ * 
+ * Architecture:
+ * - Left side (Regular Tips): Locked-in data from main app's uploaded report
+ * - Right side (Holiday Tips): Separate upload for holiday-only hours
+ * - Holiday side matches partners by name from Regular side
+ * - Holiday Tips is an ADD-ON, not a replacement
  * 
  * Features:
- * - Upload two separate reports (normal week + holiday period)
- * - Match partners between both reports
- * - Apply different hourly rates for normal vs holiday hours
+ * - Reads regular week data from main app (already uploaded)
+ * - Upload holiday-specific hours report separately
+ * - Match partners between both for combined view
+ * - Apply different tip amounts for normal vs holiday periods
  * - Calculate combined totals with bill breakdown
  */
 
@@ -20,26 +28,71 @@ const HolidayDashboard = (function () {
 
     // Private state
     let isOpen = false;
-    let normalReportPartners = [];
+    // Regular partners are READ from main app - never stored/modified here
     let holidayReportPartners = [];
-    let normalRate = 0;
-    let holidayRate = 0;
     let calculationResults = [];
 
     // DOM references (set on init)
     let dashboardEl = null;
-    let normalUploadZone = null;
     let holidayUploadZone = null;
-    let normalPartnersPreview = null;
+    let regularPartnersPreview = null;
     let holidayPartnersPreview = null;
-    let normalRateInput = null;
-    let holidayRateInput = null;
     let calculateBtn = null;
     let resultsSection = null;
 
     // ============================================
     // UTILITY FUNCTIONS
     // ============================================
+
+    /**
+     * Get regular partners from main app.js
+     * This reads the global `partners` array which is set by the main app's OCR upload.
+     * Returns a copy to prevent any accidental modifications.
+     * @returns {Array} Copy of partners array from main app
+     */
+    function getRegularPartnersFromMainApp() {
+        // Access the global partners array from app.js
+        if (typeof window.partners !== 'undefined' && Array.isArray(window.partners)) {
+            // Return a deep copy so we never modify the original
+            return window.partners.map(p => ({
+                name: p.name || '',
+                number: p.number || '',
+                hours: parseFloat(p.hours) || 0
+            })).filter(p => p.name && p.hours > 0);
+        }
+        // Fallback: try to read from DOM if partners not exposed globally
+        return getPartnersFromDOM();
+    }
+
+    /**
+     * Fallback: Read partners from the DOM table if global array not available
+     * @returns {Array} Partners extracted from the table
+     */
+    function getPartnersFromDOM() {
+        const tableBody = document.getElementById('partner-table-body');
+        if (!tableBody) return [];
+
+        const partners = [];
+        const rows = tableBody.querySelectorAll('tr');
+
+        rows.forEach(row => {
+            const nameInput = row.querySelector('input[data-field="name"]');
+            const numberInput = row.querySelector('input[data-field="number"]');
+            const hoursInput = row.querySelector('input[data-field="hours"]');
+
+            if (nameInput && hoursInput) {
+                const name = nameInput.value?.trim() || '';
+                const number = numberInput?.value?.trim() || '';
+                const hours = parseFloat(hoursInput.value) || 0;
+
+                if (name && hours > 0) {
+                    partners.push({ name, number, hours });
+                }
+            }
+        });
+
+        return partners;
+    }
 
     function debugLog(...args) {
         if (window.DEBUG_MODE) {
@@ -147,7 +200,7 @@ const HolidayDashboard = (function () {
 
     /**
      * Process uploaded image and extract partner data
-     * Includes fallback mechanisms for different Azure API formats
+     * This is a simplified version that works independently
      */
     async function processReportImage(file, updateStatus) {
         const config = getAzureConfig();
@@ -159,217 +212,57 @@ const HolidayDashboard = (function () {
 
         updateStatus('Preparing image...');
         const base64 = await fileToBase64(file);
-        const binaryData = base64ToArrayBuffer(base64);
 
         updateStatus('Uploading to Azure...');
 
         const endpoint = config.endpoint.replace(/\/$/, '');
-        
-        // Try multiple API formats in sequence
-        let result = null;
-        let apiError = null;
-
-        // Attempt 1: Document Intelligence API (newest)
-        try {
-            result = await tryDocumentIntelligenceAPI(endpoint, config.apiKey, binaryData, updateStatus);
-            if (result) {
-                const partners = extractPartnersFromResult(result);
-                return partners;
-            }
-        } catch (e) {
-            debugLog('Document Intelligence API failed:', e.message);
-            apiError = e;
-        }
-
-        // Attempt 2: Form Recognizer API (older format)
-        try {
-            updateStatus('Trying alternative API...');
-            result = await tryFormRecognizerAPI(endpoint, config.apiKey, binaryData, updateStatus);
-            if (result) {
-                const partners = extractPartnersFromResult(result);
-                return partners;
-            }
-        } catch (e) {
-            debugLog('Form Recognizer API failed:', e.message);
-            apiError = e;
-        }
-
-        // Attempt 3: Computer Vision Read API (fallback)
-        try {
-            updateStatus('Trying Computer Vision API...');
-            result = await tryComputerVisionAPI(endpoint, config.apiKey, binaryData, updateStatus);
-            if (result) {
-                const partners = extractPartnersFromResult(result);
-                return partners;
-            }
-        } catch (e) {
-            debugLog('Computer Vision API failed:', e.message);
-            apiError = e;
-        }
-
-        // All APIs failed
-        throw apiError || new Error('All Azure API attempts failed');
-    }
-
-    /**
-     * Try Document Intelligence API (newest format)
-     */
-    async function tryDocumentIntelligenceAPI(endpoint, apiKey, binaryData, updateStatus) {
         const analyzeUrl = `${endpoint}/documentintelligence/documentModels/prebuilt-layout:analyze?api-version=2024-11-30`;
-        
-        debugLog('Trying Document Intelligence API:', analyzeUrl);
 
         const submitResponse = await fetch(analyzeUrl, {
             method: 'POST',
             headers: {
-                'Ocp-Apim-Subscription-Key': apiKey,
+                'Ocp-Apim-Subscription-Key': config.apiKey,
                 'Content-Type': 'application/octet-stream'
             },
-            body: binaryData
+            body: base64ToArrayBuffer(base64)
         });
 
         if (!submitResponse.ok) {
-            const errorText = await submitResponse.text();
-            throw new Error(`Document Intelligence API error: ${submitResponse.status} - ${errorText}`);
+            throw new Error(`API error: ${submitResponse.status}`);
         }
 
         const operationLocation = submitResponse.headers.get('Operation-Location') ||
-            submitResponse.headers.get('operation-location');
+            submitResponse.headers.get('apim-request-id');
 
         if (!operationLocation) {
             throw new Error('No operation location returned');
         }
 
-        return await pollForResults(operationLocation, apiKey, updateStatus);
-    }
-
-    /**
-     * Try Form Recognizer API (older format)
-     */
-    async function tryFormRecognizerAPI(endpoint, apiKey, binaryData, updateStatus) {
-        const analyzeUrl = `${endpoint}/formrecognizer/documentModels/prebuilt-layout:analyze?api-version=2023-07-31`;
-        
-        debugLog('Trying Form Recognizer API:', analyzeUrl);
-
-        const submitResponse = await fetch(analyzeUrl, {
-            method: 'POST',
-            headers: {
-                'Ocp-Apim-Subscription-Key': apiKey,
-                'Content-Type': 'application/octet-stream'
-            },
-            body: binaryData
-        });
-
-        if (!submitResponse.ok) {
-            const errorText = await submitResponse.text();
-            throw new Error(`Form Recognizer API error: ${submitResponse.status} - ${errorText}`);
-        }
-
-        const operationLocation = submitResponse.headers.get('Operation-Location') ||
-            submitResponse.headers.get('operation-location');
-
-        if (!operationLocation) {
-            throw new Error('No operation location returned');
-        }
-
-        return await pollForResults(operationLocation, apiKey, updateStatus);
-    }
-
-    /**
-     * Try Computer Vision Read API (fallback)
-     */
-    async function tryComputerVisionAPI(endpoint, apiKey, binaryData, updateStatus) {
-        const analyzeUrl = `${endpoint}/vision/v3.2/read/analyze`;
-        
-        debugLog('Trying Computer Vision API:', analyzeUrl);
-
-        const submitResponse = await fetch(analyzeUrl, {
-            method: 'POST',
-            headers: {
-                'Ocp-Apim-Subscription-Key': apiKey,
-                'Content-Type': 'application/octet-stream'
-            },
-            body: binaryData
-        });
-
-        if (!submitResponse.ok) {
-            const errorText = await submitResponse.text();
-            throw new Error(`Computer Vision API error: ${submitResponse.status} - ${errorText}`);
-        }
-
-        const operationLocation = submitResponse.headers.get('Operation-Location');
-
-        if (!operationLocation) {
-            throw new Error('No operation location returned');
-        }
-
-        // Poll for Computer Vision results
+        // Poll for results
         let result = null;
         let attempts = 0;
+        const resultUrl = operationLocation.startsWith('http')
+            ? operationLocation
+            : `${endpoint}/documentintelligence/documentModels/prebuilt-layout/analyzeResults/${operationLocation}?api-version=2024-11-30`;
 
         while (attempts < 30) {
             await sleep(1000);
             attempts++;
             updateStatus('Analyzing document...');
 
-            const resultResponse = await fetch(operationLocation, {
+            const resultResponse = await fetch(resultUrl, {
                 method: 'GET',
-                headers: { 'Ocp-Apim-Subscription-Key': apiKey }
+                headers: { 'Ocp-Apim-Subscription-Key': config.apiKey }
             });
 
             result = await resultResponse.json();
             if (result.status === 'succeeded') break;
-            if (result.status === 'failed') throw new Error('Computer Vision analysis failed');
+            if (result.status === 'failed') throw new Error('Analysis failed');
         }
 
-        // Convert Computer Vision format to standard format
-        if (result && result.analyzeResult && result.analyzeResult.readResults) {
-            const content = result.analyzeResult.readResults
-                .flatMap(page => (page.lines || []).map(line => line.text))
-                .join('\n');
-            return { analyzeResult: { content } };
-        }
-
-        return result;
-    }
-
-    /**
-     * Poll for results from Azure API
-     */
-    async function pollForResults(operationLocation, apiKey, updateStatus) {
-        let result = null;
-        let attempts = 0;
-
-        while (attempts < 60) {
-            await sleep(1000);
-            attempts++;
-            updateStatus('Analyzing document...');
-
-            const resultResponse = await fetch(operationLocation, {
-                method: 'GET',
-                headers: { 'Ocp-Apim-Subscription-Key': apiKey }
-            });
-
-            if (!resultResponse.ok) {
-                throw new Error(`Failed to get results: ${resultResponse.status}`);
-            }
-
-            result = await resultResponse.json();
-            
-            if (result.status === 'succeeded' || result.status === 'completed') {
-                break;
-            }
-            if (result.status === 'failed') {
-                const errorMessage = result.error?.message || 'Unknown error';
-                throw new Error(`Analysis failed: ${errorMessage}`);
-            }
-        }
-
-        if (!result || (result.status !== 'succeeded' && result.status !== 'completed')) {
-            throw new Error('Timeout waiting for results');
-        }
-
-        return result;
+        // Extract partners from result
+        const partners = extractPartnersFromResult(result);
+        return partners;
     }
 
     /**
@@ -652,7 +545,7 @@ const HolidayDashboard = (function () {
 
                     <!-- Upload Grid -->
                     <div class="holiday-dashboard__grid">
-                        <!-- Regular Tips Card (Non-Holiday) -->
+                        <!-- Regular Tips Card (Locked from Main App) -->
                         <div class="holiday-card">
                             <div class="holiday-card__header">
                                 <div class="holiday-card__header-left">
@@ -664,22 +557,26 @@ const HolidayDashboard = (function () {
                                     </div>
                                     <h3 class="holiday-card__title">Regular Tips</h3>
                                 </div>
-                                <span class="holiday-card__tag">Non-Holiday Hours</span>
+                                <span class="holiday-card__tag holiday-card__tag--locked">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;margin-right:4px;">
+                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                                    </svg>
+                                    Locked
+                                </span>
                             </div>
-                            <div class="holiday-upload-zone" id="normal-upload-zone">
-                                <input type="file" accept="image/*" class="holiday-upload-zone__input" id="normal-report-input">
-                                <div class="holiday-upload-zone__icon">
+                            <!-- Locked Data Display (no upload zone) -->
+                            <div class="holiday-locked-data" id="regular-locked-data">
+                                <div class="holiday-locked-data__icon">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                        <polyline points="17 8 12 3 7 8"/>
-                                        <line x1="12" y1="3" x2="12" y2="15"/>
+                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                                     </svg>
                                 </div>
-                                <p class="holiday-upload-zone__text">Upload Regular Hours Report</p>
-                                <p class="holiday-upload-zone__hint">PNG, JPG, JPEG supported</p>
-                                <p class="holiday-upload-zone__status" id="normal-upload-status"></p>
+                                <p class="holiday-locked-data__text">Using your weekly report</p>
+                                <p class="holiday-locked-data__hint" id="regular-data-status">No partners loaded</p>
                             </div>
-                            <div class="holiday-partners-list" id="normal-partners-preview"></div>
+                            <div class="holiday-partners-list" id="regular-partners-preview"></div>
                             <div class="holiday-tips-section">
                                 <div class="holiday-tips-label">
                                     <svg viewBox="0 0 24 24" fill="currentColor">
@@ -689,13 +586,13 @@ const HolidayDashboard = (function () {
                                 </div>
                                 <div class="holiday-tips-input-wrapper">
                                     <span class="holiday-tips-currency">$</span>
-                                    <input type="number" class="holiday-tips-input" id="normal-tips-input" 
+                                    <input type="number" class="holiday-tips-input" id="regular-tips-input" 
                                            placeholder="0.00" step="0.01" min="0">
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Holiday Tips Card -->
+                        <!-- Holiday Tips Card (Upload Required) -->
                         <div class="holiday-card">
                             <div class="holiday-card__header">
                                 <div class="holiday-card__header-left">
@@ -745,7 +642,7 @@ const HolidayDashboard = (function () {
                                     <line x1="12" y1="16" x2="12" y2="12"/>
                                     <line x1="12" y1="8" x2="12.01" y2="8"/>
                                 </svg>
-                                <span>Upload reports to begin</span>
+                                <span id="holiday-calculate-hint-text">Upload holiday report to begin</span>
                             </div>
                             <button class="holiday-calculate-btn" id="holiday-calculate-btn" disabled>
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -922,27 +819,66 @@ const HolidayDashboard = (function () {
 
     function updateCalculateButtonState() {
         const btn = document.getElementById('holiday-calculate-btn');
-        const hintEl = document.querySelector('.holiday-calculate-hint span');
+        const hintEl = document.getElementById('holiday-calculate-hint-text');
         if (!btn) return;
 
-        const normalTipsVal = parseFloat(document.getElementById('normal-tips-input')?.value) || 0;
+        // Get regular partners from main app (always fresh)
+        const regularPartners = getRegularPartnersFromMainApp();
+        const regularTipsVal = parseFloat(document.getElementById('regular-tips-input')?.value) || 0;
         const holidayTipsVal = parseFloat(document.getElementById('holiday-tips-input')?.value) || 0;
 
-        const hasNormalData = normalReportPartners.length > 0;
+        const hasRegularData = regularPartners.length > 0;
         const hasHolidayData = holidayReportPartners.length > 0;
-        const hasAnyData = hasNormalData || hasHolidayData;
-        const hasTips = normalTipsVal > 0 || holidayTipsVal > 0;
+        const hasAnyTips = regularTipsVal > 0 || holidayTipsVal > 0;
 
-        btn.disabled = !(hasAnyData && hasTips);
+        // Key rule: Need regular data AND holiday data (or just holiday with tips)
+        // Holiday Tips is an add-on, so we need holiday upload
+        const canCalculate = hasHolidayData && hasAnyTips;
+
+        btn.disabled = !canCalculate;
 
         // Update hint text based on state
         if (hintEl) {
-            if (!hasAnyData) {
-                hintEl.textContent = 'Upload reports to begin';
-            } else if (!hasTips) {
+            if (!hasRegularData) {
+                hintEl.textContent = 'Upload a report on the main page first';
+            } else if (!hasHolidayData) {
+                hintEl.textContent = 'Upload holiday hours report';
+            } else if (!hasAnyTips) {
                 hintEl.textContent = 'Enter cash tips to calculate';
             } else {
                 hintEl.textContent = 'Ready to calculate';
+            }
+        }
+
+        // Update regular data status display
+        updateRegularDataDisplay(regularPartners);
+    }
+
+    /**
+     * Update the locked regular data display with current partner info
+     */
+    function updateRegularDataDisplay(regularPartners) {
+        const statusEl = document.getElementById('regular-data-status');
+        const previewEl = document.getElementById('regular-partners-preview');
+        const lockedDataEl = document.getElementById('regular-locked-data');
+
+        if (!statusEl) return;
+
+        if (regularPartners.length > 0) {
+            const totalHours = regularPartners.reduce((sum, p) => sum + (p.hours || 0), 0);
+            statusEl.textContent = `${regularPartners.length} partners • ${totalHours.toFixed(2)} hours`;
+            if (lockedDataEl) {
+                lockedDataEl.classList.add('has-data');
+            }
+            // Show preview of partners
+            renderPartnersPreview(regularPartners, 'regular-partners-preview');
+        } else {
+            statusEl.textContent = 'No partners loaded - upload a report first';
+            if (lockedDataEl) {
+                lockedDataEl.classList.remove('has-data');
+            }
+            if (previewEl) {
+                previewEl.innerHTML = '';
             }
         }
     }
@@ -950,34 +886,6 @@ const HolidayDashboard = (function () {
     // ============================================
     // EVENT HANDLERS
     // ============================================
-
-    async function handleNormalReportUpload(event) {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        const statusEl = document.getElementById('normal-upload-status');
-        const zone = document.getElementById('normal-upload-zone');
-
-        try {
-            normalReportPartners = await processReportImage(file, (msg) => {
-                if (statusEl) statusEl.textContent = msg;
-            });
-
-            if (statusEl) {
-                statusEl.textContent = `${normalReportPartners.length} partners found`;
-            }
-            if (zone) zone.classList.add('has-file');
-
-            renderPartnersPreview(normalReportPartners, 'normal-partners-preview');
-            updateCalculateButtonState();
-
-        } catch (err) {
-            debugLog('Normal report upload error:', err);
-            if (statusEl) {
-                statusEl.textContent = `Error: ${err.message}`;
-            }
-        }
-    }
 
     async function handleHolidayReportUpload(event) {
         const file = event.target.files?.[0];
@@ -1008,31 +916,43 @@ const HolidayDashboard = (function () {
     }
 
     function handleCalculate() {
-        const normalTipsVal = parseFloat(document.getElementById('normal-tips-input')?.value) || 0;
+        // Get regular partners from main app (locked data)
+        const regularPartners = getRegularPartnersFromMainApp();
+        const regularTipsVal = parseFloat(document.getElementById('regular-tips-input')?.value) || 0;
         const holidayTipsVal = parseFloat(document.getElementById('holiday-tips-input')?.value) || 0;
 
-        if (normalReportPartners.length === 0 && holidayReportPartners.length === 0) {
-            alert('Please upload at least one report.');
+        // Validate: need holiday data to proceed
+        if (holidayReportPartners.length === 0) {
+            alert('Please upload a holiday hours report.');
             return;
         }
 
-        if (normalTipsVal <= 0 && holidayTipsVal <= 0) {
+        if (regularTipsVal <= 0 && holidayTipsVal <= 0) {
             alert('Please enter at least one cash tips amount.');
             return;
         }
 
         // Calculate total hours for each period
-        const normalTotalHours = normalReportPartners.reduce((sum, p) => sum + (p.hours || 0), 0);
+        const regularTotalHours = regularPartners.reduce((sum, p) => sum + (p.hours || 0), 0);
         const holidayTotalHours = holidayReportPartners.reduce((sum, p) => sum + (p.hours || 0), 0);
 
         // Derive hourly rates from tips / hours
-        const normalHourlyRate = normalTotalHours > 0 ? normalTipsVal / normalTotalHours : 0;
+        const regularHourlyRate = regularTotalHours > 0 ? regularTipsVal / regularTotalHours : 0;
         const holidayHourlyRate = holidayTotalHours > 0 ? holidayTipsVal / holidayTotalHours : 0;
 
+        debugLog('Calculating with:', {
+            regularPartners: regularPartners.length,
+            holidayPartners: holidayReportPartners.length,
+            regularTips: regularTipsVal,
+            holidayTips: holidayTipsVal,
+            regularHourlyRate,
+            holidayHourlyRate
+        });
+
         const results = calculateHolidaySplitTips(
-            normalReportPartners,
+            regularPartners,
             holidayReportPartners,
-            normalHourlyRate,
+            regularHourlyRate,
             holidayHourlyRate
         );
 
@@ -1065,6 +985,10 @@ const HolidayDashboard = (function () {
         }
 
         document.body.style.overflow = 'hidden';
+
+        // Populate regular data from main app when opening
+        // This ensures we always have the latest data
+        updateCalculateButtonState();
     }
 
     function close() {
@@ -1089,35 +1013,30 @@ const HolidayDashboard = (function () {
         document.body.style.overflow = '';
     }
 
+    /**
+     * Reset only the holiday-specific data
+     * Regular data is read from main app and should NOT be reset here
+     * This ensures the "add-on" behavior where holiday is separate
+     */
     function reset() {
-        normalReportPartners = [];
+        // Only reset holiday data - regular data comes from main app
         holidayReportPartners = [];
-        normalRate = 0;
-        holidayRate = 0;
         calculationResults = [];
 
-        // Reset UI
-        const normalStatus = document.getElementById('normal-upload-status');
+        // Reset ONLY holiday UI elements
         const holidayStatus = document.getElementById('holiday-upload-status');
-        const normalPreview = document.getElementById('normal-partners-preview');
         const holidayPreview = document.getElementById('holiday-partners-preview');
-        const normalZone = document.getElementById('normal-upload-zone');
         const holidayZone = document.getElementById('holiday-upload-zone');
-        const normalInput = document.getElementById('normal-report-input');
         const holidayInput = document.getElementById('holiday-report-input');
-        const normalTipsIn = document.getElementById('normal-tips-input');
+        const regularTipsIn = document.getElementById('regular-tips-input');
         const holidayTipsIn = document.getElementById('holiday-tips-input');
         const results = document.getElementById('holiday-results');
 
-        if (normalStatus) normalStatus.textContent = '';
         if (holidayStatus) holidayStatus.textContent = '';
-        if (normalPreview) normalPreview.innerHTML = '';
         if (holidayPreview) holidayPreview.innerHTML = '';
-        if (normalZone) normalZone.classList.remove('has-file');
         if (holidayZone) holidayZone.classList.remove('has-file');
-        if (normalInput) normalInput.value = '';
         if (holidayInput) holidayInput.value = '';
-        if (normalTipsIn) normalTipsIn.value = '';
+        if (regularTipsIn) regularTipsIn.value = '';
         if (holidayTipsIn) holidayTipsIn.value = '';
         if (results) results.classList.remove('is-visible');
 
@@ -1133,10 +1052,9 @@ const HolidayDashboard = (function () {
 
         // Set up event listeners
         const closeBtn = document.getElementById('holiday-close-btn');
-        const normalReportInput = document.getElementById('normal-report-input');
         const holidayReportInput = document.getElementById('holiday-report-input');
         const calcBtn = document.getElementById('holiday-calculate-btn');
-        const normalTipsIn = document.getElementById('normal-tips-input');
+        const regularTipsIn = document.getElementById('regular-tips-input');
         const holidayTipsIn = document.getElementById('holiday-tips-input');
 
         if (closeBtn) {
@@ -1146,10 +1064,7 @@ const HolidayDashboard = (function () {
             });
         }
 
-        if (normalReportInput) {
-            normalReportInput.addEventListener('change', handleNormalReportUpload);
-        }
-
+        // Only holiday upload - regular is read from main app
         if (holidayReportInput) {
             holidayReportInput.addEventListener('change', handleHolidayReportUpload);
         }
@@ -1158,19 +1073,18 @@ const HolidayDashboard = (function () {
             calcBtn.addEventListener('click', handleCalculate);
         }
 
-        if (normalTipsIn) {
-            normalTipsIn.addEventListener('input', updateCalculateButtonState);
+        if (regularTipsIn) {
+            regularTipsIn.addEventListener('input', updateCalculateButtonState);
         }
 
         if (holidayTipsIn) {
             holidayTipsIn.addEventListener('input', updateCalculateButtonState);
         }
 
-        // Set up drag and drop
-        setupDragDrop('normal-upload-zone', 'normal-report-input');
+        // Only need drag/drop for holiday upload zone
         setupDragDrop('holiday-upload-zone', 'holiday-report-input');
 
-        debugLog('Holiday Dashboard initialized');
+        debugLog('Holiday Dashboard initialized (add-on mode)');
     }
 
     function setupDragDrop(zoneId, inputId) {
