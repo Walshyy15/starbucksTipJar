@@ -856,24 +856,28 @@ const HolidayDashboard = (function () {
 
     /**
      * Update the locked regular data display with current partner info
+     * This reads from the main app's partner data and displays it as read-only
      */
     function updateRegularDataDisplay(regularPartners) {
         const statusEl = document.getElementById('regular-data-status');
         const previewEl = document.getElementById('regular-partners-preview');
         const lockedDataEl = document.getElementById('regular-locked-data');
+        const textEl = document.querySelector('.holiday-locked-data__text');
 
         if (!statusEl) return;
 
         if (regularPartners.length > 0) {
             const totalHours = regularPartners.reduce((sum, p) => sum + (p.hours || 0), 0);
             statusEl.textContent = `${regularPartners.length} partners • ${totalHours.toFixed(2)} hours`;
+            if (textEl) textEl.textContent = 'Using your weekly report';
             if (lockedDataEl) {
                 lockedDataEl.classList.add('has-data');
             }
             // Show preview of partners
             renderPartnersPreview(regularPartners, 'regular-partners-preview');
         } else {
-            statusEl.textContent = 'No partners loaded - upload a report first';
+            statusEl.textContent = 'Close this and upload a report on the main page first';
+            if (textEl) textEl.textContent = 'No weekly data found';
             if (lockedDataEl) {
                 lockedDataEl.classList.remove('has-data');
             }
@@ -1017,18 +1021,21 @@ const HolidayDashboard = (function () {
      * Reset only the holiday-specific data
      * Regular data is read from main app and should NOT be reset here
      * This ensures the "add-on" behavior where holiday is separate
+     * 
+     * KEY: Regular tips input is NOT cleared - it's part of the locked regular week data
+     * Only holiday-specific inputs and data are reset
      */
     function reset() {
         // Only reset holiday data - regular data comes from main app
         holidayReportPartners = [];
         calculationResults = [];
 
-        // Reset ONLY holiday UI elements
+        // Reset ONLY holiday UI elements - NOT regular tips input
         const holidayStatus = document.getElementById('holiday-upload-status');
         const holidayPreview = document.getElementById('holiday-partners-preview');
         const holidayZone = document.getElementById('holiday-upload-zone');
         const holidayInput = document.getElementById('holiday-report-input');
-        const regularTipsIn = document.getElementById('regular-tips-input');
+        // NOTE: regularTipsIn is intentionally NOT reset - it's part of the locked regular week data
         const holidayTipsIn = document.getElementById('holiday-tips-input');
         const results = document.getElementById('holiday-results');
 
@@ -1036,7 +1043,7 @@ const HolidayDashboard = (function () {
         if (holidayPreview) holidayPreview.innerHTML = '';
         if (holidayZone) holidayZone.classList.remove('has-file');
         if (holidayInput) holidayInput.value = '';
-        if (regularTipsIn) regularTipsIn.value = '';
+        // Regular tips input is NOT cleared - stays locked with the regular week data
         if (holidayTipsIn) holidayTipsIn.value = '';
         if (results) results.classList.remove('is-visible');
 

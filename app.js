@@ -24,7 +24,22 @@ function debugLog(...args) {
 
 let partners = []; // { id, name, number, hours }
 // Expose partners globally so Holiday Dashboard can read (not modify) the data
-window.partners = partners;
+// Using defineProperty to create a getter ensures Holiday Dashboard always gets current data
+Object.defineProperty(window, 'partners', {
+    get: function () { return partners; },
+    configurable: true
+});
+
+/**
+ * Sync the partners array - call this after any modifications to partners
+ * Holiday Dashboard reads from window.partners which is now a getter
+ */
+function syncPartners() {
+    // Trigger any listeners that might be watching
+    if (typeof window.onPartnersChange === 'function') {
+        window.onPartnersChange(partners);
+    }
+}
 let nextPartnerId = 1;
 
 // Common tokens and headers that should be stripped from OCR output
@@ -211,7 +226,8 @@ document.addEventListener("DOMContentLoaded", () => {
         updateTotalHours();
     });
     clearTableBtn.addEventListener("click", () => {
-        partners = [];
+        partners.length = 0; // Clear array without reassigning to maintain reference
+        syncPartners();
         renderPartnerTable();
         updateTotalHours();
         clearResults();
