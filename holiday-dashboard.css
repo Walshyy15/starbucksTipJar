@@ -249,6 +249,68 @@
     font-size: 0.6875rem;
     font-weight: 600;
     color: rgba(255, 255, 255, 0.6);
+    display: flex;
+    align-items: center;
+}
+
+.holiday-card__tag--locked {
+    background: rgba(0, 168, 98, 0.1);
+    border-color: rgba(0, 168, 98, 0.3);
+    color: #00A862;
+}
+
+/* Locked Data Display (for Regular Tips from main app) */
+.holiday-locked-data {
+    background: rgba(0, 168, 98, 0.08);
+    border: 2px solid rgba(0, 168, 98, 0.25);
+    border-radius: 16px;
+    padding: 1.5rem 1rem;
+    text-align: center;
+}
+
+.holiday-locked-data__icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 0.75rem;
+    background: rgba(0, 168, 98, 0.15);
+    border: 1px solid rgba(0, 168, 98, 0.3);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.holiday-locked-data__icon svg {
+    width: 22px;
+    height: 22px;
+    color: #00A862;
+}
+
+.holiday-locked-data__text {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: #00A862;
+    margin-bottom: 0.25rem;
+}
+
+.holiday-locked-data__hint {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.holiday-locked-data.has-data {
+    background: rgba(0, 168, 98, 0.12);
+    border-color: rgba(0, 168, 98, 0.4);
+}
+
+.holiday-locked-data.has-data .holiday-locked-data__icon {
+    background: rgba(0, 168, 98, 0.25);
+    border-color: rgba(0, 168, 98, 0.5);
+}
+
+.holiday-locked-data.has-data .holiday-locked-data__hint {
+    color: #00A862;
+    font-weight: 500;
 }
 
 /* Upload Zone */

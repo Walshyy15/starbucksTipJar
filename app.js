@@ -23,6 +23,8 @@ function debugLog(...args) {
 }
 
 let partners = []; // { id, name, number, hours }
+// Expose partners globally so Holiday Dashboard can read (not modify) the data
+window.partners = partners;
 let nextPartnerId = 1;
 
 // Common tokens and headers that should be stripped from OCR output
