@@ -200,7 +200,8 @@ const HolidayDashboard = (function () {
 
     /**
      * Process uploaded image and extract partner data
-     * This is a simplified version that works independently
+     * This version has fallback mechanisms for different Azure API endpoints
+     * to handle various Azure service configurations (matching app.js behavior)
      */
     async function processReportImage(file, updateStatus) {
         const config = getAzureConfig();
@@ -216,18 +217,69 @@ const HolidayDashboard = (function () {
         updateStatus('Uploading to Azure...');
 
         const endpoint = config.endpoint.replace(/\/$/, '');
+
+        // Try multiple API formats in sequence (matching app.js behavior)
+        let result = null;
+
+        // Try 1: Document Intelligence (2024-11-30)
+        try {
+            result = await tryDocumentIntelligence(endpoint, config.apiKey, base64, updateStatus);
+            if (result) {
+                const partners = extractPartnersFromResult(result);
+                return partners;
+            }
+        } catch (err) {
+            debugLog('Document Intelligence failed:', err.message);
+        }
+
+        // Try 2: Form Recognizer (2023-07-31)
+        try {
+            updateStatus('Trying alternative API...');
+            result = await tryFormRecognizer(endpoint, config.apiKey, base64, updateStatus);
+            if (result) {
+                const partners = extractPartnersFromResult(result);
+                return partners;
+            }
+        } catch (err) {
+            debugLog('Form Recognizer failed:', err.message);
+        }
+
+        // Try 3: Computer Vision Read API (v3.2)
+        try {
+            updateStatus('Trying Computer Vision API...');
+            result = await tryComputerVision(endpoint, config.apiKey, base64, updateStatus);
+            if (result) {
+                const partners = extractPartnersFromResult(result);
+                return partners;
+            }
+        } catch (err) {
+            debugLog('Computer Vision failed:', err.message);
+            throw new Error('All Azure API attempts failed. Check your credentials.');
+        }
+
+        throw new Error('Could not extract data from image');
+    }
+
+    /**
+     * Try Document Intelligence API (2024-11-30)
+     */
+    async function tryDocumentIntelligence(endpoint, apiKey, base64, updateStatus) {
         const analyzeUrl = `${endpoint}/documentintelligence/documentModels/prebuilt-layout:analyze?api-version=2024-11-30`;
+
+        debugLog('Trying Document Intelligence:', analyzeUrl);
 
         const submitResponse = await fetch(analyzeUrl, {
             method: 'POST',
             headers: {
-                'Ocp-Apim-Subscription-Key': config.apiKey,
+                'Ocp-Apim-Subscription-Key': apiKey,
                 'Content-Type': 'application/octet-stream'
             },
             body: base64ToArrayBuffer(base64)
         });
 
         if (!submitResponse.ok) {
+            const errorText = await submitResponse.text();
+            debugLog('Document Intelligence error:', submitResponse.status, errorText);
             throw new Error(`API error: ${submitResponse.status}`);
         }
 
@@ -238,21 +290,83 @@ const HolidayDashboard = (function () {
             throw new Error('No operation location returned');
         }
 
-        // Poll for results
+        return await pollForResults(operationLocation, endpoint, apiKey, updateStatus, 'documentintelligence');
+    }
+
+    /**
+     * Try Form Recognizer API (2023-07-31) - older format
+     */
+    async function tryFormRecognizer(endpoint, apiKey, base64, updateStatus) {
+        const analyzeUrl = `${endpoint}/formrecognizer/documentModels/prebuilt-layout:analyze?api-version=2023-07-31`;
+
+        debugLog('Trying Form Recognizer:', analyzeUrl);
+
+        const submitResponse = await fetch(analyzeUrl, {
+            method: 'POST',
+            headers: {
+                'Ocp-Apim-Subscription-Key': apiKey,
+                'Content-Type': 'application/octet-stream'
+            },
+            body: base64ToArrayBuffer(base64)
+        });
+
+        if (!submitResponse.ok) {
+            const errorText = await submitResponse.text();
+            debugLog('Form Recognizer error:', submitResponse.status, errorText);
+            throw new Error(`API error: ${submitResponse.status}`);
+        }
+
+        const operationLocation = submitResponse.headers.get('Operation-Location') ||
+            submitResponse.headers.get('operation-location');
+
+        if (!operationLocation) {
+            throw new Error('No operation location returned');
+        }
+
+        return await pollForResults(operationLocation, endpoint, apiKey, updateStatus, 'formrecognizer');
+    }
+
+    /**
+     * Try Computer Vision Read API (v3.2)
+     */
+    async function tryComputerVision(endpoint, apiKey, base64, updateStatus) {
+        const analyzeUrl = `${endpoint}/vision/v3.2/read/analyze`;
+
+        debugLog('Trying Computer Vision:', analyzeUrl);
+
+        const submitResponse = await fetch(analyzeUrl, {
+            method: 'POST',
+            headers: {
+                'Ocp-Apim-Subscription-Key': apiKey,
+                'Content-Type': 'application/octet-stream'
+            },
+            body: base64ToArrayBuffer(base64)
+        });
+
+        if (!submitResponse.ok) {
+            const errorText = await submitResponse.text();
+            debugLog('Computer Vision error:', submitResponse.status, errorText);
+            throw new Error(`API error: ${submitResponse.status}`);
+        }
+
+        const operationLocation = submitResponse.headers.get('Operation-Location');
+
+        if (!operationLocation) {
+            throw new Error('No operation location returned');
+        }
+
+        // Poll for Computer Vision results
         let result = null;
         let attempts = 0;
-        const resultUrl = operationLocation.startsWith('http')
-            ? operationLocation
-            : `${endpoint}/documentintelligence/documentModels/prebuilt-layout/analyzeResults/${operationLocation}?api-version=2024-11-30`;
 
         while (attempts < 30) {
             await sleep(1000);
             attempts++;
-            updateStatus('Analyzing document...');
+            updateStatus(`Analyzing document... (${attempts}s)`);
 
-            const resultResponse = await fetch(resultUrl, {
+            const resultResponse = await fetch(operationLocation, {
                 method: 'GET',
-                headers: { 'Ocp-Apim-Subscription-Key': config.apiKey }
+                headers: { 'Ocp-Apim-Subscription-Key': apiKey }
             });
 
             result = await resultResponse.json();
@@ -260,9 +374,47 @@ const HolidayDashboard = (function () {
             if (result.status === 'failed') throw new Error('Analysis failed');
         }
 
-        // Extract partners from result
-        const partners = extractPartnersFromResult(result);
-        return partners;
+        // Convert Computer Vision format to Document Intelligence format
+        if (result && result.analyzeResult && result.analyzeResult.readResults) {
+            const content = [];
+            for (const page of result.analyzeResult.readResults) {
+                for (const line of page.lines || []) {
+                    content.push(line.text);
+                }
+            }
+            return { analyzeResult: { content: content.join('\n') } };
+        }
+
+        return null;
+    }
+
+    /**
+     * Poll for results from Document Intelligence or Form Recognizer
+     */
+    async function pollForResults(operationLocation, endpoint, apiKey, updateStatus, apiType) {
+        let result = null;
+        let attempts = 0;
+
+        const resultUrl = operationLocation.startsWith('http')
+            ? operationLocation
+            : `${endpoint}/${apiType}/documentModels/prebuilt-layout/analyzeResults/${operationLocation}?api-version=${apiType === 'documentintelligence' ? '2024-11-30' : '2023-07-31'}`;
+
+        while (attempts < 30) {
+            await sleep(1000);
+            attempts++;
+            updateStatus(`Analyzing document... (${attempts}s)`);
+
+            const resultResponse = await fetch(resultUrl, {
+                method: 'GET',
+                headers: { 'Ocp-Apim-Subscription-Key': apiKey }
+            });
+
+            result = await resultResponse.json();
+            if (result.status === 'succeeded' || result.status === 'completed') break;
+            if (result.status === 'failed') throw new Error('Analysis failed');
+        }
+
+        return result;
     }
 
     /**
