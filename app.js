@@ -1059,14 +1059,28 @@ function parseOcrToPartners(text) {
     // Helper to add entry avoiding duplicates
     function addEntry(entry) {
         if (!entry || !entry.name || entry.name.length < 2) return;
-        // Check for duplicate by name (case-insensitive)
-        const exists = parsed.some(p =>
-            p.name.toLowerCase().trim() === entry.name.toLowerCase().trim()
-        );
+        // Check for duplicate by name AND partner number (case-insensitive)
+        // This ensures partners with the same name but different numbers are counted separately
+        const entryNameLower = entry.name.toLowerCase().trim();
+        const entryNumberLower = (entry.number || '').toLowerCase().trim();
+
+        const exists = parsed.some(p => {
+            const pNameLower = p.name.toLowerCase().trim();
+            const pNumberLower = (p.number || '').toLowerCase().trim();
+
+            // If both have partner numbers, compare both name AND number
+            if (entryNumberLower && pNumberLower) {
+                return pNameLower === entryNameLower && pNumberLower === entryNumberLower;
+            }
+            // If either is missing a number, compare by name AND hours to avoid duplicates
+            // from OCR reading the same line twice
+            return pNameLower === entryNameLower && Math.abs(p.hours - entry.hours) < 0.01;
+        });
         if (!exists) {
             parsed.push(entry);
         }
     }
+
 
     // Skip patterns - headers and metadata
     const skipPatterns = [
@@ -1590,15 +1604,25 @@ function redistributeBills() {
     // If not enough total cash, we can't fully redistribute
     // But we'll still do our best with what's available
 
-    // Redistribute bills to partners based on their payout
-    const updatedResults = [];
+    // Create a copy with original indices to maintain order
     let remainingBills = { ...availableBills };
 
     // Track totals for updating the UI
     let usedBills = { twenties: 0, tens: 0, fives: 0, ones: 0 };
 
+    // Create indexed array for sorting while preserving original indices
+    const indexedResults = lastCalculationResults.map((partner, index) => ({
+        ...partner,
+        originalIndex: index,
+        // Create unique key combining name and number for matching
+        uniqueKey: `${partner.name}|${partner.number}|${partner.hours}`
+    }));
+
     // Sort partners by payout (highest first) to allocate larger bills first
-    const sortedResults = [...lastCalculationResults].sort((a, b) => b.wholeDollarPayout - a.wholeDollarPayout);
+    const sortedResults = [...indexedResults].sort((a, b) => b.wholeDollarPayout - a.wholeDollarPayout);
+
+    // Map to store breakdown by unique key
+    const breakdownMap = new Map();
 
     for (const partner of sortedResults) {
         let remaining = partner.wholeDollarPayout;
@@ -1658,14 +1682,35 @@ function redistributeBills() {
         usedBills.fives += breakdown.fives;
         usedBills.ones += breakdown.ones;
 
-        updatedResults.push({
-            ...partner,
+        // Store breakdown by unique key for later matching
+        breakdownMap.set(partner.uniqueKey, {
             breakdown,
             adjustedPayout: partner.wholeDollarPayout - remaining
         });
     }
 
-    // Re-render partner cards with new breakdown
+    // Build final results in ORIGINAL order by matching unique keys
+    const updatedResults = lastCalculationResults.map(partner => {
+        const uniqueKey = `${partner.name}|${partner.number}|${partner.hours}`;
+        const redistributed = breakdownMap.get(uniqueKey);
+
+        if (redistributed) {
+            return {
+                ...partner,
+                breakdown: redistributed.breakdown,
+                adjustedPayout: redistributed.adjustedPayout
+            };
+        }
+
+        // Fallback if no match (should not happen)
+        return {
+            ...partner,
+            breakdown: partner.breakdown,
+            adjustedPayout: partner.wholeDollarPayout
+        };
+    });
+
+    // Re-render partner cards with new breakdown (in original order)
     renderResultsTable(updatedResults, lastHourlyRate);
 }
 
