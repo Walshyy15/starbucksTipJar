@@ -75,7 +75,9 @@
 }
 
 /* CSS Reset */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
@@ -166,6 +168,129 @@ body {
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
+}
+
+/* ============================================
+   UPLOAD REPORT BUTTON - Sleek Glass Style
+   ============================================ */
+.upload-button-wrapper {
+    margin-bottom: var(--space-2);
+}
+
+.upload-report-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    width: 100%;
+    padding: var(--space-3) var(--space-4);
+    background: linear-gradient(145deg, rgba(0, 117, 74, 0.15) 0%, rgba(0, 168, 98, 0.08) 100%);
+    border: 1.5px solid rgba(0, 168, 98, 0.3);
+    border-radius: var(--radius-lg);
+    color: var(--starbucks-green-light);
+    font-family: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    position: relative;
+    overflow: hidden;
+}
+
+.upload-report-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(0, 168, 98, 0.1) 0%, transparent 50%);
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+}
+
+.upload-report-btn:hover,
+.upload-report-btn:focus-visible {
+    background: linear-gradient(145deg, rgba(0, 117, 74, 0.25) 0%, rgba(0, 168, 98, 0.15) 100%);
+    border-color: var(--starbucks-green-light);
+    box-shadow: 0 0 20px rgba(0, 168, 98, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    transform: translateY(-1px);
+}
+
+.upload-report-btn:hover::before,
+.upload-report-btn:focus-visible::before {
+    opacity: 1;
+}
+
+.upload-report-btn:active {
+    transform: translateY(0);
+}
+
+.upload-report-btn svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    transition: transform var(--transition-fast);
+}
+
+.upload-report-btn:hover svg {
+    transform: translateY(-2px);
+    animation: float-arrow 1.5s ease-in-out infinite;
+}
+
+@keyframes float-arrow {
+
+    0%,
+    100% {
+        transform: translateY(-2px);
+    }
+
+    50% {
+        transform: translateY(-5px);
+    }
+}
+
+.upload-report-btn span {
+    position: relative;
+    z-index: 1;
+}
+
+.upload-report-btn input[type="file"] {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+/* OCR Status - Compact display */
+.ocr-status {
+    margin-top: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    font-size: 0.8125rem;
+    text-align: center;
+    transition: all var(--transition-fast);
+}
+
+.ocr-status:empty {
+    display: none;
+}
+
+.ocr-status.processing {
+    background: rgba(0, 117, 74, 0.15);
+    border: 1px solid var(--starbucks-green);
+    color: var(--starbucks-green-light);
+}
+
+.ocr-status.success {
+    background: rgba(0, 168, 98, 0.15);
+    border: 1px solid var(--success);
+    color: var(--success);
+}
+
+.ocr-status.error {
+    background: rgba(216, 67, 21, 0.15);
+    border: 1px solid var(--error);
+    color: var(--error);
 }
 
 /* ============================================
@@ -587,7 +712,9 @@ body {
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .ocr-progress {
@@ -638,6 +765,7 @@ body {
         opacity: 0;
         transform: translateY(10px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -996,10 +1124,14 @@ body {
 
 /* Prevent iOS zoom on input focus */
 @media (max-width: 600px) {
-    input, select, textarea, .cell-input {
+
+    input,
+    select,
+    textarea,
+    .cell-input {
         font-size: 16px !important;
     }
-    
+
     .input-wrapper.compact input {
         font-size: 16px !important;
     }
@@ -1138,6 +1270,7 @@ body {
 
 /* Touch Device Optimizations */
 @media (hover: none) and (pointer: coarse) {
+
     .btn-action,
     .btn-icon,
     .upload-btn,
@@ -1180,7 +1313,10 @@ body {
 
 /* Reduced Motion */
 @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
+
+    *,
+    *::before,
+    *::after {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
