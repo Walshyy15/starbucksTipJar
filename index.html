@@ -161,44 +161,82 @@
         <!-- SEO H1 - Visually hidden but accessible to search engines and screen readers -->
         <h1 class="visually-hidden">TipJar – Starbucks Tips Calculator | Estimate Your Weekly Tip Distribution</h1>
 
-        <!-- Header -->
+        <!-- Compact Header -->
         <header class="header">
             <div class="logo">
                 <span class="logo-text">TipJar</span>
             </div>
         </header>
 
-        <!-- Main Content -->
+        <!-- Main Content - Compact Layout -->
         <main class="main-content">
-            <div class="grid two-column">
-                <!-- Upload Section -->
-                <section class="card upload-card" id="upload-section">
-                    <div class="upload-icon">
+
+            <!-- ============================================
+                 UPLOAD REPORT - Collapsible (Before Input)
+                 ============================================ -->
+            <section class="collapsible-section" id="upload-section">
+                <button class="collapsible-header" type="button" aria-expanded="false" aria-controls="upload-content">
+                    <div class="collapsible-title">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                             stroke-linecap="round" stroke-linejoin="round">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                             <polyline points="17 8 12 3 7 8" />
                             <line x1="12" y1="3" x2="12" y2="15" />
                         </svg>
-                    </div>
-                    <p class="upload-title">Upload Report</p>
-                    <label class="upload-btn">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                            <circle cx="8.5" cy="8.5" r="1.5" />
-                            <polyline points="21 15 16 10 5 21" />
-                        </svg>
                         <span>Upload Report</span>
-                        <input id="image-upload" type="file" accept="image/*" />
-                    </label>
-                    <p class="upload-hint">Supports PNG, JPG, JPEG, GIF</p>
-                    <div id="ocr-status" class="ocr-status"></div>
-                </section>
+                    </div>
+                    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                </button>
+                <div class="collapsible-content" id="upload-content">
+                    <div class="upload-area">
+                        <label class="upload-btn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                <circle cx="8.5" cy="8.5" r="1.5" />
+                                <polyline points="21 15 16 10 5 21" />
+                            </svg>
+                            <span>Select Image</span>
+                            <input id="image-upload" type="file" accept="image/*" />
+                        </label>
+                        <p class="upload-hint">PNG, JPG, JPEG, GIF</p>
+                        <div id="ocr-status" class="ocr-status"></div>
+                    </div>
+                </div>
+            </section>
 
-                <!-- Partners Table -->
-                <section class="card partners-card" id="partners-section">
-                    <div class="section-header">
+            <!-- ============================================
+                 PRIMARY INPUT SECTION - Always Visible Above Fold
+                 Two-column grid for compact data entry
+                 ============================================ -->
+            <section class="card input-card" id="input-section">
+                <!-- Quick Input Grid: Total Tips + Total Hours side by side -->
+                <div class="quick-input-grid">
+                    <div class="quick-input-item">
+                        <label for="total-tips">Total Tips</label>
+                        <div class="input-wrapper compact">
+                            <span class="currency-symbol">$</span>
+                            <input id="total-tips" type="number" min="0" step="0.01" placeholder="0.00"
+                                aria-label="Total tip amount in dollars" inputmode="decimal" />
+                        </div>
+                    </div>
+                    <div class="quick-input-item">
+                        <label>Total Hours</label>
+                        <div class="hours-display">
+                            <span id="total-hours">0.00</span>
+                            <span class="hours-label">hrs</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hourly Rate Display (shown after calculation) -->
+                <div id="hourly-rate-display" class="hourly-rate compact"></div>
+
+                <!-- Partner Entry - Compact Inline Form -->
+                <div class="partner-entry-section">
+                    <div class="section-header compact">
                         <h2>Partners</h2>
                         <div class="header-actions">
                             <button id="add-row-btn" type="button" class="btn-icon" title="Add Partner"
@@ -222,8 +260,10 @@
                             </button>
                         </div>
                     </div>
-                    <div class="table-wrapper">
-                        <table class="data-table">
+
+                    <!-- Compact Partner Table -->
+                    <div class="table-wrapper compact">
+                        <table class="data-table compact">
                             <thead>
                                 <tr>
                                     <th>Name</th>
@@ -236,69 +276,30 @@
                             </tbody>
                         </table>
                     </div>
-                    <div class="total-hours-row">
-                        <span>Total Hours</span>
-                        <strong id="total-hours">0.00</strong>
-                    </div>
-                </section>
-            </div>
-
-            <!-- Combined Tips Input & Calculate Section -->
-            <section class="card tips-action-card">
-                <div class="tips-input-group">
-                    <label for="total-tips">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round">
-                            <polygon
-                                points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                        </svg>
-                        Total Tip Amount
-                    </label>
-                    <div class="input-wrapper">
-                        <span class="currency-symbol">$</span>
-                        <input id="total-tips" type="number" min="0" step="0.01" placeholder="0.00"
-                            aria-label="Total tip amount in dollars" inputmode="decimal" />
-                    </div>
                 </div>
-                <div id="hourly-rate-display" class="hourly-rate"></div>
-                <button id="calculate-btn" type="button" class="btn btn-primary btn-large full-width">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                        <polyline points="22 4 12 14.01 9 11.01" />
-                    </svg>
-                    Calculate Distribution
-                </button>
-
             </section>
 
-            <!-- Holiday Tips Toggle Button -->
-            <button class="holiday-toggle-btn" id="holiday-toggle-btn" type="button" onclick="HolidayDashboard.open()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round">
-                    <polygon
-                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                </svg>
-                <span>Holiday Tips</span>
-            </button>
-
-            <!-- Results Section -->
+            <!-- ============================================
+                 RESULTS SECTION - Shows After Calculation
+                 ============================================ -->
             <section class="card results-card" id="results-section">
                 <div class="section-header">
                     <div class="title-group">
-                        <h2>Distribution Summary</h2>
+                        <h2>Distribution</h2>
                     </div>
                     <div class="pill" id="distribution-date"></div>
                 </div>
 
-                <!-- Calculation Summary -->
-                <div class="calc-summary" id="calc-summary">
-                    <div class="calc-summary-title">Tip Calculation</div>
-                    <div class="calc-formula" id="calc-formula">Total Tips: $0.00 ÷ Total Hours: 0.00 = $0.00 per hour
-                    </div>
-                    <div class="bills-needed">
-                        <div class="bills-needed-title">Bills Needed <span class="bills-hint">(edit to
-                                redistribute)</span></div>
+                <!-- Calculation Summary - Compact -->
+                <div class="calc-summary compact" id="calc-summary">
+                    <div class="calc-formula" id="calc-formula">Total Tips: $0.00 ÷ Total Hours: 0.00 = $0.00/hr</div>
+
+                    <!-- Bill Breakdown - Collapsible within results -->
+                    <details class="bills-details">
+                        <summary class="bills-summary">
+                            <span>Bills Needed</span>
+                            <span class="bills-hint">(tap to edit)</span>
+                        </summary>
                         <div class="bills-needed-list" id="bills-needed-list">
                             <label class="bill-edit">
                                 <input type="number" id="total-twenties" min="0" value="0"
@@ -321,7 +322,7 @@
                                 <span>× $1</span>
                             </label>
                         </div>
-                    </div>
+                    </details>
                 </div>
 
                 <!-- Partner Cards Grid -->
@@ -329,22 +330,58 @@
             </section>
         </main>
 
-        <!-- Footer -->
-        <footer class="footer">
+        <!-- Compact Footer -->
+        <footer class="footer compact">
             <p>Made with ☕ by <strong>William Walsh</strong></p>
             <p class="store-info">
                 <a href="https://maps.google.com/maps?q=Starbucks,+139+Endicott+St,+Danvers,+MA+01923" target="_blank"
                     rel="noopener noreferrer" class="store-link">
-                    Starbucks Store# 66900
+                    Store# 66900
                 </a>
             </p>
         </footer>
+
+        <!-- ============================================
+             STICKY ACTION BAR - Always Visible at Bottom
+             Contains the Calculate button for easy access
+             ============================================ -->
+        <div class="sticky-action-bar">
+            <button id="calculate-btn" type="button" class="btn btn-primary btn-action">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                    <polyline points="22 4 12 14.01 9 11.01" />
+                </svg>
+                Calculate
+            </button>
+        </div>
     </div>
 
     <!-- App logic -->
     <script src="app.js"></script>
     <!-- Holiday Dashboard Module (separate add-on) -->
     <script src="holiday-dashboard.js"></script>
+
+    <!-- Collapsible Section Logic -->
+    <script>
+        // Toggle collapsible sections
+        document.querySelectorAll('.collapsible-header').forEach(header => {
+            header.addEventListener('click', function () {
+                const section = this.closest('.collapsible-section');
+                const content = section.querySelector('.collapsible-content');
+                const isExpanded = this.getAttribute('aria-expanded') === 'true';
+
+                this.setAttribute('aria-expanded', !isExpanded);
+                section.classList.toggle('expanded', !isExpanded);
+
+                if (!isExpanded) {
+                    content.style.maxHeight = content.scrollHeight + 'px';
+                } else {
+                    content.style.maxHeight = '0';
+                }
+            });
+        });
+    </script>
 </body>
 
 </html>

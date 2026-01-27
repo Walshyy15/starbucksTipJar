@@ -206,6 +206,7 @@ function getAzureConfig() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+    // ---------- DOM REFERENCES ----------
     partnerTableBody = document.getElementById("partner-table-body");
     totalHoursSpan = document.getElementById("total-hours");
     totalTipsInput = document.getElementById("total-tips");
@@ -219,20 +220,57 @@ document.addEventListener("DOMContentLoaded", () => {
     const clearTableBtn = document.getElementById("clear-table-btn");
     const calculateBtn = document.getElementById("calculate-btn");
 
-    uploadInput.addEventListener("change", handleImageUpload);
-    addRowBtn.addEventListener("click", () => {
-        addEmptyPartnerRow();
-        renderPartnerTable();
-        updateTotalHours();
+    // ---------- COLLAPSIBLE SECTIONS ----------
+    // Toggle collapsible sections (Upload Report, Holiday Tips)
+    document.querySelectorAll('.collapsible-header').forEach(header => {
+        header.addEventListener('click', function () {
+            const section = this.closest('.collapsible-section');
+            const content = section.querySelector('.collapsible-content');
+            const isExpanded = this.getAttribute('aria-expanded') === 'true';
+
+            // Toggle aria-expanded attribute
+            this.setAttribute('aria-expanded', !isExpanded);
+            section.classList.toggle('expanded', !isExpanded);
+
+            // Animate max-height for smooth transition
+            if (!isExpanded) {
+                content.style.maxHeight = content.scrollHeight + 'px';
+            } else {
+                content.style.maxHeight = '0';
+            }
+        });
     });
-    clearTableBtn.addEventListener("click", () => {
-        partners.length = 0; // Clear array without reassigning to maintain reference
-        syncPartners();
-        renderPartnerTable();
-        updateTotalHours();
-        clearResults();
-    });
-    calculateBtn.addEventListener("click", runCalculations);
+
+    // ---------- EVENT LISTENERS ----------
+    // Upload handler (with null check for new layout)
+    if (uploadInput) {
+        uploadInput.addEventListener("change", handleImageUpload);
+    }
+
+    // Add partner row
+    if (addRowBtn) {
+        addRowBtn.addEventListener("click", () => {
+            addEmptyPartnerRow();
+            renderPartnerTable();
+            updateTotalHours();
+        });
+    }
+
+    // Clear all partners
+    if (clearTableBtn) {
+        clearTableBtn.addEventListener("click", () => {
+            partners.length = 0; // Clear array without reassigning to maintain reference
+            syncPartners();
+            renderPartnerTable();
+            updateTotalHours();
+            clearResults();
+        });
+    }
+
+    // Calculate distribution
+    if (calculateBtn) {
+        calculateBtn.addEventListener("click", runCalculations);
+    }
 
     // Bill count edit listeners - redistribute when changed
     const billInputs = ['total-twenties', 'total-tens', 'total-fives', 'total-ones'];
@@ -243,6 +281,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // ---------- INITIALIZATION ----------
     // Check Azure configuration
     const config = getAzureConfig();
     if (!config.endpoint || config.endpoint === '__AZURE_VISION_ENDPOINT__' ||
@@ -254,6 +293,9 @@ document.addEventListener("DOMContentLoaded", () => {
     addEmptyPartnerRow();
     renderPartnerTable();
     updateTotalHours();
+
+    // Scroll to top on load to ensure above-fold content is visible
+    window.scrollTo(0, 0);
 });
 
 // ---------- OCR HANDLING ----------

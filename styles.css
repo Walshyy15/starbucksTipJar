@@ -1,40 +1,31 @@
 /* ============================================
-   TipJar - Starbucks App Inspired Design
-   Premium, Card-Based, Rewards-Focused, Mobile-First
+   TipJar - Compact Mobile-First Redesign
+   Premium Starbucks-inspired design with reduced scrolling
    ============================================ */
 
-/* Import Google Font - SoDo Sans is Starbucks' custom font, 
-   we use Sora as a close alternative for web */
+/* Import Google Font - Sora as Starbucks-like alternative */
 @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap');
 
 :root {
     /* Starbucks Signature Color Palette */
     --starbucks-green: #00754A;
-    /* Starbucks House Green - Primary */
     --starbucks-green-dark: #1E3932;
-    /* Deep Forest Green */
     --starbucks-green-light: #00A862;
-    /* Accent Green for highlights */
     --starbucks-accent: #D4E9E2;
-    /* Skeptic - Soft mint green */
     --starbucks-cream: #F1F0EB;
-    /* Warm Cream background alternative */
 
     /* App Background - Dark Premium Theme */
-    --bg-primary: #1E3932;
-    /* Deep forest green */
-    --bg-secondary: #162B26;
-    /* Darker forest */
-    --bg-tertiary: #0D1B17;
-    /* Deepest shadow */
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #141414;
+    --bg-tertiary: #0a0a0a;
 
     /* Card System */
-    --card-bg: rgba(30, 57, 50, 0.85);
-    --card-bg-solid: #1E3932;
-    --card-elevated: rgba(45, 75, 65, 0.9);
-    --card-glass: rgba(255, 255, 255, 0.05);
-    --card-border: rgba(212, 233, 226, 0.12);
-    --card-border-strong: rgba(212, 233, 226, 0.25);
+    --card-bg: rgba(30, 30, 30, 0.95);
+    --card-bg-solid: #1e1e1e;
+    --card-elevated: rgba(40, 40, 40, 0.95);
+    --card-glass: rgba(255, 255, 255, 0.03);
+    --card-border: rgba(255, 255, 255, 0.08);
+    --card-border-strong: rgba(255, 255, 255, 0.15);
 
     /* Text Colors */
     --text-primary: #FFFFFF;
@@ -53,54 +44,50 @@
     --error: #D84315;
     --info: #00754A;
 
-    /* Shadows - Premium depth */
-    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.15);
-    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.2);
-    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.25);
-    --shadow-glow: 0 0 30px rgba(0, 117, 74, 0.3);
-    --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08);
+    /* Shadows - Refined depth */
+    --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.25);
+    --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.3);
+    --shadow-glow: 0 0 20px rgba(0, 117, 74, 0.25);
 
-    /* Spacing - 8pt grid system */
+    /* Compact Spacing - Reduced for mobile */
     --space-1: 4px;
     --space-2: 8px;
     --space-3: 12px;
     --space-4: 16px;
-    --space-5: 24px;
-    --space-6: 32px;
-    --space-7: 48px;
-    --space-8: 64px;
+    --space-5: 20px;
+    --space-6: 24px;
 
-    /* Border Radius - Starbucks uses generous curves */
-    --radius-sm: 8px;
-    --radius-md: 12px;
-    --radius-lg: 16px;
-    --radius-xl: 24px;
+    /* Border Radius */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-xl: 18px;
     --radius-full: 9999px;
 
     /* Transitions */
-    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-bounce: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    --transition-fast: 150ms ease;
+    --transition-base: 250ms ease;
+    --transition-slow: 350ms ease;
+
+    /* Sticky Action Bar Height */
+    --action-bar-height: 72px;
 }
 
 /* CSS Reset */
-*,
-*::before,
-*::after {
+*, *::before, *::after {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
 }
 
-/* Smooth scrolling */
 html {
     scroll-behavior: smooth;
     font-size: 16px;
     -webkit-text-size-adjust: 100%;
 }
 
-/* Visually Hidden - Accessible to screen readers and SEO */
+/* Visually Hidden - Accessible to screen readers */
 .visually-hidden {
     position: absolute;
     width: 1px;
@@ -113,379 +100,221 @@ html {
     border: 0;
 }
 
-/* Body - Immersive Starbucks environment */
+/* Body - Compact layout with padding for sticky bar */
 body {
     font-family: 'Sora', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: var(--bg-primary);
     background-image:
-        radial-gradient(ellipse at 20% 0%, rgba(0, 117, 74, 0.15) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 100%, rgba(0, 168, 98, 0.1) 0%, transparent 50%),
-        linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 30%, var(--bg-tertiary) 100%);
+        radial-gradient(ellipse at 30% 0%, rgba(0, 117, 74, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 70% 100%, rgba(0, 168, 98, 0.05) 0%, transparent 50%);
     background-attachment: fixed;
     color: var(--text-primary);
     min-height: 100vh;
     min-height: 100dvh;
-    line-height: 1.5;
+    line-height: 1.45;
     -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    padding: var(--space-4);
-    padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+    padding: var(--space-3);
+    /* Add bottom padding for sticky action bar */
+    padding-bottom: calc(var(--action-bar-height) + var(--space-3) + env(safe-area-inset-bottom, 0px));
 }
 
-/* App Container */
+/* App Container - Compact spacing */
 .app-container {
     max-width: 480px;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
-    gap: var(--space-5);
-    animation: fadeIn 0.5s var(--transition-base);
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    gap: var(--space-3);
 }
 
 /* ============================================
-   HEADER - Starbucks App Style
+   COMPACT HEADER
    ============================================ */
 .header {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: var(--space-4) 0;
-    position: relative;
+    padding: var(--space-2) 0;
 }
 
 .logo {
     display: flex;
     align-items: center;
-    gap: var(--space-3);
+    gap: var(--space-2);
     background: var(--card-glass);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--card-border);
     border-radius: var(--radius-full);
-    padding: var(--space-2) var(--space-4);
-    transition: all var(--transition-base);
-}
-
-.logo:hover {
-    border-color: var(--card-border-strong);
-    box-shadow: var(--shadow-glow);
-}
-
-.logo-icon {
-    width: 36px;
-    height: 36px;
-    background: var(--gold-gradient);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: var(--shadow-sm);
-}
-
-.logo-icon svg {
-    width: 20px;
-    height: 20px;
-    color: var(--bg-primary);
+    padding: var(--space-1) var(--space-3);
 }
 
 .logo-text {
-    font-size: 1.25rem;
+    font-size: 1.125rem;
     font-weight: 700;
     letter-spacing: -0.02em;
-    background: linear-gradient(135deg, var(--text-primary) 0%, var(--starbucks-accent) 100%);
+    background: linear-gradient(135deg, var(--starbucks-green-light) 0%, var(--text-primary) 100%);
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
 /* ============================================
-   MAIN CONTENT
+   MAIN CONTENT - Compact Layout
    ============================================ */
 .main-content {
     display: flex;
     flex-direction: column;
-    gap: var(--space-5);
-}
-
-/* Grid System */
-.grid {
-    display: grid;
-    gap: var(--space-4);
-}
-
-.grid.two-column {
-    grid-template-columns: 1fr;
-}
-
-@media (min-width: 769px) {
-    .grid.two-column {
-        grid-template-columns: 1fr 1fr;
-    }
+    gap: var(--space-3);
 }
 
 /* ============================================
-   CARDS - Premium Glassmorphism Style
+   CARDS - Compact Glassmorphism
    ============================================ */
 .card {
     background: var(--card-bg);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-radius: var(--radius-xl);
-    padding: var(--space-5);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
     border: 1px solid var(--card-border);
-    box-shadow: var(--shadow-card);
-    position: relative;
-    overflow: hidden;
-    transition: all var(--transition-base);
+    box-shadow: var(--shadow-md);
 }
 
-.card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: linear-gradient(90deg,
-            transparent 0%,
-            rgba(255, 255, 255, 0.1) 20%,
-            rgba(255, 255, 255, 0.15) 50%,
-            rgba(255, 255, 255, 0.1) 80%,
-            transparent 100%);
+/* Input Card - Primary data entry */
+.input-card {
+    background: linear-gradient(145deg, var(--card-elevated) 0%, var(--card-bg) 100%);
 }
 
-.card:hover {
-    border-color: var(--card-border-strong);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
-}
-
-/* Section Headers */
-.section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+/* ============================================
+   QUICK INPUT GRID - Two Column Layout
+   ============================================ */
+.quick-input-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
     margin-bottom: var(--space-4);
 }
 
-.section-header h2 {
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    letter-spacing: -0.01em;
-}
-
-.title-group {
+.quick-input-item {
     display: flex;
     flex-direction: column;
     gap: var(--space-1);
 }
 
-.title-group h2 {
-    font-size: 1.25rem;
-}
-
-.eyebrow {
+.quick-input-item label {
     font-size: 0.6875rem;
-    font-weight: 600;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--starbucks-green-light);
-}
-
-.label {
-    font-size: 0.8125rem;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--text-muted);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.08em;
 }
 
-/* Reward Pill Badge */
-.pill {
-    background: rgba(0, 168, 98, 0.15);
-    color: var(--starbucks-green-light);
-    border: 1px solid rgba(0, 168, 98, 0.3);
-    padding: var(--space-1) var(--space-3);
-    border-radius: var(--radius-full);
-    font-weight: 600;
-    font-size: 0.75rem;
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-1);
-}
-
-.pill::before {
-    content: '★';
-    font-size: 0.625rem;
-    color: var(--gold-star);
-}
-
-/* ============================================
-   UPLOAD CARD - Hero Upload Section
-   ============================================ */
-.upload-card {
-    text-align: center;
-    padding: var(--space-6) var(--space-5);
-    background: linear-gradient(145deg, var(--card-elevated) 0%, var(--card-bg) 100%);
-}
-
-.upload-icon {
-    width: 88px;
-    height: 88px;
-    margin: 0 auto var(--space-4);
-    background: linear-gradient(135deg, var(--starbucks-green) 0%, var(--starbucks-green-light) 100%);
-    border-radius: var(--radius-xl);
+/* Compact Input Wrapper */
+.input-wrapper.compact {
     display: flex;
     align-items: center;
-    justify-content: center;
-    box-shadow: var(--shadow-md), var(--shadow-glow);
-    position: relative;
-    animation: pulse-glow 3s ease-in-out infinite;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1.5px solid var(--card-border);
+    border-radius: var(--radius-md);
+    padding: 0 var(--space-3);
+    transition: all var(--transition-fast);
 }
 
-@keyframes pulse-glow {
-
-    0%,
-    100% {
-        box-shadow: var(--shadow-md), 0 0 30px rgba(0, 117, 74, 0.3);
-    }
-
-    50% {
-        box-shadow: var(--shadow-md), 0 0 50px rgba(0, 168, 98, 0.4);
-    }
+.input-wrapper.compact:focus-within {
+    border-color: var(--starbucks-green);
+    background: rgba(0, 117, 74, 0.1);
+    box-shadow: 0 0 0 3px rgba(0, 117, 74, 0.15);
 }
 
-.upload-icon::before {
-    content: '';
-    position: absolute;
-    inset: 2px;
-    border-radius: calc(var(--radius-xl) - 2px);
-    border: 2px dashed rgba(255, 255, 255, 0.3);
-}
-
-.upload-icon svg {
-    width: 36px;
-    height: 36px;
-    color: white;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
-}
-
-.upload-title {
+.input-wrapper.compact .currency-symbol {
+    color: var(--gold-star);
     font-size: 1rem;
-    font-weight: 600;
-    color: var(--text-secondary);
-    margin-bottom: var(--space-4);
-    line-height: 1.4;
+    font-weight: 700;
 }
 
-.upload-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-2);
-    background: var(--starbucks-green);
-    color: white;
+.input-wrapper.compact input {
+    flex: 1;
+    background: transparent;
     border: none;
-    padding: var(--space-3) var(--space-5);
-    border-radius: var(--radius-full);
+    color: var(--text-primary);
     font-family: inherit;
-    font-size: 0.9375rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all var(--transition-base);
-    box-shadow: 0 4px 14px rgba(0, 117, 74, 0.4);
-    min-height: 52px;
+    font-size: 1.25rem;
+    font-weight: 700;
+    padding: var(--space-2) 0 var(--space-2) var(--space-1);
+    font-variant-numeric: tabular-nums;
+    min-height: 44px;
 }
 
-.upload-btn:hover {
-    background: var(--starbucks-green-light);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 168, 98, 0.5);
+.input-wrapper.compact input:focus {
+    outline: none;
 }
 
-.upload-btn:active {
-    transform: translateY(0);
-}
-
-.upload-btn svg {
-    width: 18px;
-    height: 18px;
-}
-
-.upload-btn input[type="file"] {
-    display: none;
-}
-
-.upload-hint {
-    font-size: 0.8125rem;
+.input-wrapper.compact input::placeholder {
     color: var(--text-hint);
-    margin-top: var(--space-3);
 }
 
-/* OCR Status */
-.ocr-status {
-    margin-top: var(--space-4);
-    font-size: 0.875rem;
-    color: var(--starbucks-green-light);
-    min-height: 1.5em;
-}
-
-.ocr-status:empty {
-    display: none;
-}
-
-.ocr-status.is-loading {
-    color: var(--text-secondary);
-}
-
-.ocr-loader {
-    display: inline-flex;
+/* Hours Display - Matching style */
+.hours-display {
+    display: flex;
     align-items: center;
-    gap: var(--space-3);
-    padding: var(--space-2) var(--space-4);
-    background: rgba(0, 117, 74, 0.15);
-    border: 1px solid rgba(0, 168, 98, 0.25);
-    border-radius: var(--radius-full);
+    gap: var(--space-1);
+    background: rgba(0, 117, 74, 0.12);
+    border: 1.5px solid rgba(0, 168, 98, 0.2);
+    border-radius: var(--radius-md);
+    padding: var(--space-2) var(--space-3);
+    min-height: 44px;
 }
 
-.ocr-spinner {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    border: 2px solid rgba(0, 168, 98, 0.3);
-    border-top-color: var(--starbucks-green-light);
-    animation: spin 0.8s linear infinite;
+.hours-display span:first-child {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--starbucks-green-light);
+    font-variant-numeric: tabular-nums;
 }
 
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-.ocr-progress {
+.hours-display .hours-label {
+    font-size: 0.75rem;
     font-weight: 600;
-    font-size: 0.8125rem;
+    color: var(--text-muted);
+}
+
+/* Compact Hourly Rate */
+.hourly-rate.compact {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--starbucks-green-light);
+    text-align: center;
+    padding: var(--space-2) var(--space-3);
+    background: rgba(0, 117, 74, 0.12);
+    border: 1px solid rgba(0, 168, 98, 0.2);
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--space-3);
+}
+
+.hourly-rate.compact:empty {
+    display: none;
 }
 
 /* ============================================
-   PARTNERS CARD - Data Input Section
+   PARTNER ENTRY SECTION
    ============================================ */
-.partners-card {
-    padding: var(--space-4);
+.partner-entry-section {
+    border-top: 1px solid var(--card-border);
+    padding-top: var(--space-3);
+}
+
+.section-header.compact {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-3);
+}
+
+.section-header.compact h2 {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--text-primary);
 }
 
 .header-actions {
@@ -494,22 +323,22 @@ body {
 }
 
 .btn-icon {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: var(--card-glass);
     border: 1px solid var(--card-border);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-sm);
     color: var(--text-muted);
     cursor: pointer;
     transition: all var(--transition-fast);
 }
 
 .btn-icon svg {
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
 }
 
 .btn-icon:hover {
@@ -524,51 +353,50 @@ body {
     border-color: rgba(216, 67, 21, 0.3);
 }
 
-/* Data Table */
-.table-wrapper {
+/* Compact Data Table */
+.table-wrapper.compact {
+    margin: 0;
     overflow-x: auto;
-    margin: 0 calc(var(--space-4) * -1);
-    padding: 0 var(--space-4);
     -webkit-overflow-scrolling: touch;
 }
 
-.data-table {
+.data-table.compact {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.9375rem;
+    font-size: 0.875rem;
 }
 
-.data-table th,
-.data-table td {
-    padding: var(--space-3) var(--space-2);
+.data-table.compact th,
+.data-table.compact td {
+    padding: var(--space-2);
     text-align: left;
 }
 
-.data-table th {
-    font-size: 0.6875rem;
+.data-table.compact th {
+    font-size: 0.625rem;
     font-weight: 700;
-    color: var(--text-muted);
+    color: var(--text-hint);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     border-bottom: 1px solid var(--card-border);
 }
 
-.data-table td {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+.data-table.compact td {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
 }
 
-.data-table tr:last-child td {
+.data-table.compact tr:last-child td {
     border-bottom: none;
 }
 
-/* Cell Inputs */
+/* Cell Inputs - Compact */
 .cell-input {
     width: 100%;
     background: transparent;
     border: none;
     color: var(--text-primary);
     font-family: inherit;
-    font-size: 0.9375rem;
+    font-size: 0.875rem;
     padding: var(--space-2);
     border-radius: var(--radius-sm);
     transition: all var(--transition-fast);
@@ -598,8 +426,8 @@ body {
 
 /* Delete Button */
 .icon-button {
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -617,188 +445,199 @@ body {
 }
 
 .icon-button svg {
-    width: 16px;
-    height: 16px;
-}
-
-/* Total Hours Row */
-.total-hours-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-top: var(--space-4);
-    margin-top: var(--space-3);
-    border-top: 1px solid var(--card-border);
-    font-size: 0.9375rem;
-}
-
-.total-hours-row span {
-    color: var(--text-muted);
-    font-weight: 500;
-}
-
-.total-hours-row strong {
-    color: var(--starbucks-green-light);
-    font-weight: 700;
-    font-size: 1.125rem;
-    font-variant-numeric: tabular-nums;
+    width: 14px;
+    height: 14px;
 }
 
 /* ============================================
-   TIPS ACTION CARD - Star Rewards Style
+   COLLAPSIBLE SECTIONS
    ============================================ */
-.tips-action-card {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-4);
-    padding: var(--space-5);
-    background: linear-gradient(145deg, rgba(203, 162, 88, 0.08) 0%, var(--card-bg) 50%);
+.collapsible-section {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
 }
 
-.tips-input-group label {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--text-muted);
-    margin-bottom: var(--space-2);
-}
-
-.tips-input-group label svg {
-    width: 18px;
-    height: 18px;
-    color: var(--gold-star);
-}
-
-.input-wrapper {
+.collapsible-header {
     display: flex;
     align-items: center;
-    background: rgba(0, 0, 0, 0.2);
-    border: 2px solid var(--card-border);
-    border-radius: var(--radius-lg);
-    padding: 0 var(--space-4);
+    justify-content: space-between;
+    width: 100%;
+    padding: var(--space-3) var(--space-4);
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
     transition: all var(--transition-fast);
 }
 
-.input-wrapper:focus-within {
-    border-color: var(--starbucks-green);
-    background: rgba(0, 117, 74, 0.08);
-    box-shadow: 0 0 0 4px rgba(0, 117, 74, 0.1);
+.collapsible-header:hover {
+    background: var(--card-glass);
 }
 
-.currency-symbol {
-    color: var(--gold-star);
-    font-size: 1.5rem;
-    font-weight: 700;
+.collapsible-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: 0.8125rem;
+    font-weight: 600;
 }
 
-.input-wrapper input {
-    flex: 1;
-    background: transparent;
-    border: none;
-    color: var(--text-primary);
-    font-family: inherit;
-    font-size: 1.75rem;
-    font-weight: 700;
-    padding: var(--space-3) 0 var(--space-3) var(--space-2);
-    font-variant-numeric: tabular-nums;
-}
-
-.input-wrapper input:focus {
-    outline: none;
-}
-
-.input-wrapper input::placeholder {
-    color: var(--text-hint);
-}
-
-.hourly-rate {
-    font-size: 1.5rem;
-    font-weight: 700;
+.collapsible-title svg {
+    width: 16px;
+    height: 16px;
     color: var(--starbucks-green-light);
+}
+
+.collapsible-header .chevron {
+    width: 16px;
+    height: 16px;
+    color: var(--text-hint);
+    transition: transform var(--transition-base);
+}
+
+.collapsible-section.expanded .collapsible-header .chevron {
+    transform: rotate(180deg);
+}
+
+.collapsible-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height var(--transition-base);
+}
+
+.collapsible-section.expanded .collapsible-content {
+    max-height: 300px;
+}
+
+/* Upload Area - Compact */
+.upload-area {
+    padding: var(--space-4);
     text-align: center;
-    padding: var(--space-3) var(--space-4);
-    background: rgba(0, 117, 74, 0.15);
-    border: 1px solid rgba(0, 168, 98, 0.25);
-    border-radius: var(--radius-md);
-    margin-top: var(--space-2);
 }
 
-.hourly-rate:empty {
-    display: none;
-}
-
-/* Primary Button - Starbucks Style */
-.btn {
+.upload-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: var(--space-2);
-    padding: var(--space-4) var(--space-5);
-    border-radius: var(--radius-full);
-    font-family: inherit;
-    font-size: 1rem;
-    font-weight: 700;
-    cursor: pointer;
-    border: none;
-    transition: all var(--transition-base);
-    min-height: 56px;
-}
-
-.btn svg {
-    width: 20px;
-    height: 20px;
-}
-
-.btn-primary {
     background: var(--starbucks-green);
     color: white;
-    box-shadow: 0 6px 20px rgba(0, 117, 74, 0.4);
+    border: none;
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-full);
+    font-family: inherit;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    box-shadow: 0 2px 8px rgba(0, 117, 74, 0.3);
+    min-height: 44px;
 }
 
-.btn-primary:hover {
+.upload-btn:hover {
     background: var(--starbucks-green-light);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 28px rgba(0, 168, 98, 0.5);
+    transform: translateY(-1px);
 }
 
-.btn-primary:active {
-    transform: translateY(0);
+.upload-btn svg {
+    width: 16px;
+    height: 16px;
 }
 
-.btn-large {
-    width: 100%;
-    padding: var(--space-4) var(--space-6);
+.upload-btn input[type="file"] {
+    display: none;
 }
 
-.full-width {
-    width: 100%;
-}
-
-.action-hint {
+.upload-hint {
+    font-size: 0.6875rem;
     color: var(--text-hint);
-    font-size: 0.75rem;
-    text-align: center;
     margin-top: var(--space-2);
 }
 
+/* OCR Status */
+.ocr-status {
+    margin-top: var(--space-3);
+    font-size: 0.8125rem;
+    color: var(--starbucks-green-light);
+}
+
+.ocr-status:empty {
+    display: none;
+}
+
+.ocr-loader {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    background: rgba(0, 117, 74, 0.12);
+    border: 1px solid rgba(0, 168, 98, 0.2);
+    border-radius: var(--radius-full);
+}
+
+.ocr-spinner {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid rgba(0, 168, 98, 0.3);
+    border-top-color: var(--starbucks-green-light);
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.ocr-progress {
+    font-weight: 600;
+    font-size: 0.75rem;
+}
+
+/* Holiday Section Content */
+.collapsible-desc {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: var(--space-3);
+    padding: 0 var(--space-4);
+}
+
+/* Secondary Button */
+.btn-secondary {
+    background: var(--card-glass);
+    border: 1px solid var(--card-border);
+    color: var(--text-secondary);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md);
+    font-family: inherit;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin: 0 var(--space-4) var(--space-4);
+    transition: all var(--transition-fast);
+}
+
+.btn-secondary:hover {
+    background: rgba(0, 168, 98, 0.1);
+    border-color: rgba(0, 168, 98, 0.3);
+    color: var(--starbucks-green-light);
+}
+
 /* ============================================
-   RESULTS CARD - Rewards Dashboard Style
+   RESULTS CARD - Compact Distribution View
    ============================================ */
 .results-card {
     display: none;
-    padding: var(--space-5);
-    background: linear-gradient(180deg, var(--card-elevated) 0%, var(--card-bg) 100%);
-    animation: slideUp 0.4s var(--transition-base);
+    padding: var(--space-4);
+    animation: slideUp 0.3s ease;
 }
 
 @keyframes slideUp {
     from {
         opacity: 0;
-        transform: translateY(20px);
+        transform: translateY(10px);
     }
-
     to {
         opacity: 1;
         transform: translateY(0);
@@ -809,103 +648,125 @@ body {
     display: block;
 }
 
-/* Calculation Summary - Starbucks Rewards Card Style */
-.calc-summary {
-    background: linear-gradient(135deg, rgba(203, 162, 88, 0.12) 0%, rgba(229, 199, 125, 0.05) 100%);
-    border: 1px solid rgba(203, 162, 88, 0.2);
-    border-radius: var(--radius-lg);
-    padding: var(--space-4);
-    margin-bottom: var(--space-5);
-    position: relative;
-    overflow: hidden;
-}
-
-.calc-summary::before {
-    content: '★';
-    position: absolute;
-    top: -20px;
-    right: -10px;
-    font-size: 80px;
-    color: rgba(203, 162, 88, 0.05);
-    pointer-events: none;
-}
-
-.calc-summary-title {
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--gold-star);
-    margin-bottom: var(--space-2);
+.section-header {
     display: flex;
     align-items: center;
-    gap: var(--space-2);
+    justify-content: space-between;
+    margin-bottom: var(--space-3);
 }
 
-.calc-summary-title::before {
+.section-header h2 {
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.title-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+/* Pill Badge */
+.pill {
+    background: rgba(0, 168, 98, 0.12);
+    color: var(--starbucks-green-light);
+    border: 1px solid rgba(0, 168, 98, 0.25);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-full);
+    font-weight: 600;
+    font-size: 0.6875rem;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.pill::before {
     content: '★';
-    font-size: 0.875rem;
+    font-size: 0.5rem;
+    color: var(--gold-star);
+}
+
+/* Calculation Summary - Compact */
+.calc-summary.compact {
+    background: rgba(203, 162, 88, 0.08);
+    border: 1px solid rgba(203, 162, 88, 0.15);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    margin-bottom: var(--space-3);
 }
 
 .calc-formula {
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     color: var(--text-secondary);
-    margin-bottom: var(--space-4);
-    line-height: 1.6;
     font-variant-numeric: tabular-nums;
 }
 
-.bills-needed {
+/* Bills Details - Native Collapsible */
+.bills-details {
+    margin-top: var(--space-3);
     background: rgba(0, 0, 0, 0.2);
-    padding: var(--space-3);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-sm);
 }
 
-.bills-needed-title {
-    font-size: 0.75rem;
+.bills-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-2) var(--space-3);
+    cursor: pointer;
+    font-size: 0.6875rem;
     font-weight: 700;
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    margin-bottom: var(--space-3);
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
+    list-style: none;
+}
+
+.bills-summary::-webkit-details-marker {
+    display: none;
 }
 
 .bills-hint {
     font-weight: 500;
-    font-size: 0.6875rem;
+    font-size: 0.625rem;
     color: var(--starbucks-green-light);
     text-transform: none;
     letter-spacing: normal;
 }
 
+.bills-details[open] .bills-summary {
+    border-bottom: 1px solid var(--card-border);
+}
+
 .bills-needed-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-3);
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-2);
+    padding: var(--space-3);
 }
 
 .bill-edit {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     gap: var(--space-2);
-    font-size: 0.9375rem;
+    font-size: 0.8125rem;
     color: var(--text-secondary);
 }
 
 .bill-edit input {
-    width: 56px;
+    width: 48px;
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid var(--card-border);
     border-radius: var(--radius-sm);
     color: var(--gold-star);
     font-family: inherit;
-    font-size: 1rem;
+    font-size: 0.875rem;
     font-weight: 700;
-    padding: var(--space-2) var(--space-2);
+    padding: var(--space-2);
     text-align: center;
     font-variant-numeric: tabular-nums;
     -moz-appearance: textfield;
+    min-height: 36px;
 }
 
 .bill-edit input::-webkit-inner-spin-button,
@@ -921,36 +782,30 @@ body {
 }
 
 .bill-edit span {
-    color: var(--text-muted);
+    color: var(--text-hint);
     font-weight: 600;
+    font-size: 0.75rem;
 }
 
 /* ============================================
-   PARTNER CARDS GRID - Rewards Cards Style
+   PARTNER CARDS GRID - Compact Cards
    ============================================ */
 .partner-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: var(--space-3);
-}
-
-@media (min-width: 480px) {
-    .partner-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
+    gap: var(--space-2);
 }
 
 .partner-card {
     background: var(--card-glass);
     border: 1px solid var(--card-border);
-    border-radius: var(--radius-lg);
-    padding: var(--space-4);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
     display: flex;
     flex-direction: column;
-    gap: var(--space-3);
+    gap: var(--space-2);
     transition: all var(--transition-fast);
     position: relative;
-    overflow: hidden;
 }
 
 .partner-card::after {
@@ -958,16 +813,12 @@ body {
     position: absolute;
     top: 0;
     left: 0;
-    width: 4px;
+    width: 3px;
     height: 100%;
     background: var(--starbucks-green);
     opacity: 0;
     transition: opacity var(--transition-fast);
-}
-
-.partner-card:hover {
-    border-color: var(--card-border-strong);
-    background: rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-md) 0 0 var(--radius-md);
 }
 
 .partner-card:hover::after {
@@ -982,17 +833,20 @@ body {
 
 .partner-info {
     flex: 1;
+    min-width: 0;
 }
 
 .partner-name {
     font-weight: 700;
-    font-size: 1rem;
+    font-size: 0.875rem;
     color: var(--text-primary);
-    margin-bottom: var(--space-1);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .partner-hours {
-    font-size: 0.8125rem;
+    font-size: 0.6875rem;
     color: var(--text-muted);
     display: flex;
     align-items: center;
@@ -1001,11 +855,11 @@ body {
 
 .partner-hours::before {
     content: '⏱';
-    font-size: 0.75rem;
+    font-size: 0.625rem;
 }
 
 .payout-amount {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     font-weight: 800;
     background: var(--gold-gradient);
     background-clip: text;
@@ -1015,11 +869,11 @@ body {
 }
 
 .partner-calc {
-    background: rgba(0, 0, 0, 0.2);
-    padding: var(--space-2) var(--space-3);
+    background: rgba(0, 0, 0, 0.25);
+    padding: var(--space-1) var(--space-2);
     border-radius: var(--radius-sm);
-    font-size: 0.75rem;
-    color: var(--text-muted);
+    font-size: 0.625rem;
+    color: var(--text-hint);
     font-family: 'SF Mono', 'Consolas', monospace;
     font-variant-numeric: tabular-nums;
 }
@@ -1027,252 +881,220 @@ body {
 .bill-chips {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-2);
+    gap: var(--space-1);
 }
 
 .bill-chip {
-    background: rgba(0, 117, 74, 0.15);
+    background: rgba(0, 117, 74, 0.12);
     border: 1px solid rgba(0, 168, 98, 0.2);
     border-radius: var(--radius-sm);
-    padding: var(--space-1) var(--space-2);
-    font-size: 0.75rem;
+    padding: 2px var(--space-2);
+    font-size: 0.625rem;
     font-weight: 600;
     color: var(--starbucks-green-light);
 }
 
-/* Hide old metric-based layout */
-.summary-grid,
-.details-grid,
-.partner-body,
-.metric,
-.bills-row,
-.bill-input {
-    display: none;
+/* ============================================
+   STICKY ACTION BAR
+   ============================================ */
+.sticky-action-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, var(--bg-primary) 0%, var(--bg-primary) 70%, transparent 100%);
+    padding: var(--space-4);
+    padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+    z-index: 100;
+}
+
+.btn-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    width: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: var(--space-4);
+    border-radius: var(--radius-full);
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    min-height: 52px;
+    transition: all var(--transition-base);
+}
+
+.btn-action svg {
+    width: 20px;
+    height: 20px;
+}
+
+.btn-primary {
+    background: var(--starbucks-green);
+    color: white;
+    box-shadow: 0 4px 16px rgba(0, 117, 74, 0.4);
+}
+
+.btn-primary:hover {
+    background: var(--starbucks-green-light);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(0, 168, 98, 0.5);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
 }
 
 /* ============================================
-   FOOTER - Minimal Starbucks Style
+   COMPACT FOOTER
    ============================================ */
-.footer {
+.footer.compact {
     text-align: center;
-    padding: var(--space-5) 0 var(--space-3);
-    color: var(--text-muted);
-    font-size: 0.8125rem;
+    padding: var(--space-3) 0 var(--space-2);
+    color: var(--text-hint);
+    font-size: 0.6875rem;
 }
 
-.footer strong {
-    color: var(--text-secondary);
+.footer.compact p {
+    margin: var(--space-1) 0;
+}
+
+.footer.compact strong {
+    color: var(--text-muted);
     font-weight: 600;
 }
 
 .store-info {
-    font-size: 0.75rem;
-    color: var(--starbucks-green-light);
     margin-top: var(--space-2);
+}
+
+.store-link {
     display: inline-flex;
     align-items: center;
     gap: var(--space-1);
+    color: var(--text-hint);
+    text-decoration: none;
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-full);
+    background: var(--card-glass);
+    border: 1px solid var(--card-border);
+    transition: all var(--transition-fast);
+    font-size: 0.625rem;
 }
 
-.store-info::before {
-    content: '📍';
-    font-size: 0.875rem;
-}
-
-.store-info svg {
-    width: 14px;
-    height: 14px;
+.store-link:hover {
+    color: var(--starbucks-green-light);
+    border-color: rgba(0, 168, 98, 0.3);
 }
 
 /* ============================================
-   RESPONSIVE DESIGN - Mobile First
+   MOBILE RESPONSIVE - Compact Optimizations
    ============================================ */
 
-/* Desktop (769px+) */
-@media (min-width: 769px) {
-    .app-container {
-        max-width: 960px;
-    }
-
-    .card {
-        padding: var(--space-6);
-    }
-
-    .upload-card {
-        padding: var(--space-7) var(--space-6);
-    }
-
-    .upload-icon {
-        width: 100px;
-        height: 100px;
-    }
-
-    .upload-icon svg {
-        width: 40px;
-        height: 40px;
-    }
-
-    .partner-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: var(--space-4);
-    }
-}
-
-/* Tablet (600px - 768px) */
-@media (max-width: 768px) {
-    .app-container {
-        gap: var(--space-4);
-    }
-
-    .card {
-        padding: var(--space-4);
-        border-radius: var(--radius-lg);
-    }
-
-    .section-header h2 {
-        font-size: 1rem;
-    }
-}
-
-/* Mobile (up to 600px) - Primary target */
+/* Prevent iOS zoom on input focus */
 @media (max-width: 600px) {
-    html {
-        font-size: 16px;
+    input, select, textarea, .cell-input {
+        font-size: 16px !important;
+    }
+    
+    .input-wrapper.compact input {
+        font-size: 16px !important;
+    }
+}
+
+/* Mobile Card Layout for Data Table */
+@media (max-width: 480px) {
+    .data-table.compact thead {
+        position: absolute;
+        left: -9999px;
+        visibility: hidden;
     }
 
-    body {
+    .data-table.compact tbody tr {
+        display: flex;
+        flex-wrap: wrap;
+        background: var(--card-glass);
+        border: 1px solid var(--card-border);
+        border-radius: var(--radius-sm);
         padding: var(--space-3);
-        padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
+        margin-bottom: var(--space-2);
+        gap: var(--space-2);
+        position: relative;
     }
 
-    /* Prevent iOS zoom on input focus */
-    input,
-    select,
-    textarea,
-    .cell-input {
+    .data-table.compact td {
+        display: flex;
+        flex-direction: column;
+        border-bottom: none;
+        padding: 0;
+    }
+
+    /* Name - full width */
+    .data-table.compact td:nth-child(1) {
+        flex: 1 1 100%;
+        order: 1;
+    }
+
+    /* Partner # - half */
+    .data-table.compact td:nth-child(2) {
+        flex: 1 1 45%;
+        order: 2;
+    }
+
+    /* Hours - half */
+    .data-table.compact td:nth-child(3) {
+        flex: 1 1 45%;
+        order: 3;
+    }
+
+    /* Delete - positioned */
+    .data-table.compact td:nth-child(4) {
+        position: absolute;
+        right: var(--space-2);
+        top: var(--space-2);
+    }
+
+    .data-table.compact tbody tr {
+        padding-right: calc(32px + var(--space-3));
+    }
+
+    /* Labels */
+    .data-table.compact td:nth-child(1)::before,
+    .data-table.compact td:nth-child(2)::before,
+    .data-table.compact td:nth-child(3)::before {
+        font-weight: 700;
+        color: var(--text-hint);
+        font-size: 0.5625rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 2px;
+    }
+
+    .data-table.compact td:nth-child(1)::before {
+        content: "Name";
+    }
+
+    .data-table.compact td:nth-child(2)::before {
+        content: "Partner #";
+    }
+
+    .data-table.compact td:nth-child(3)::before {
+        content: "Hours";
+    }
+
+    .data-table.compact .cell-input {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: var(--radius-sm);
+        padding: var(--space-2);
+        min-height: 36px;
         font-size: 16px !important;
     }
 
-    .app-container {
-        gap: var(--space-4);
-    }
-
-    .logo {
-        padding: var(--space-2) var(--space-3);
-    }
-
-    .logo-icon {
-        width: 32px;
-        height: 32px;
-    }
-
-    .logo-text {
-        font-size: 1.125rem;
-    }
-
-    /* Cards */
-    .card {
-        padding: var(--space-4);
-        border-radius: var(--radius-lg);
-    }
-
-    /* Upload */
-    .upload-card {
-        padding: var(--space-5) var(--space-4);
-    }
-
-    .upload-icon {
-        width: 72px;
-        height: 72px;
-    }
-
-    .upload-icon svg {
-        width: 32px;
-        height: 32px;
-    }
-
-    .upload-title {
-        font-size: 0.9375rem;
-    }
-
-    .upload-btn {
-        padding: var(--space-3) var(--space-4);
-        font-size: 0.875rem;
-        min-height: 48px;
-    }
-
-    /* Table Mobile Touch Targets */
-    .btn-icon {
-        width: 44px;
-        height: 44px;
-    }
-
-    .cell-input {
-        padding: var(--space-3);
-        min-height: 44px;
-    }
-
-    .icon-button {
-        width: 40px;
-        height: 40px;
-    }
-
-    /* Tips Input */
-    .input-wrapper input {
-        font-size: 1.5rem;
-        padding: var(--space-3) 0 var(--space-3) var(--space-2);
-        min-height: 56px;
-    }
-
-    .currency-symbol {
-        font-size: 1.25rem;
-    }
-
-    /* Button */
-    .btn {
-        min-height: 52px;
-        font-size: 0.9375rem;
-    }
-
-    /* Results */
-    .section-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: var(--space-2);
-    }
-
-    .pill {
-        font-size: 0.6875rem;
-    }
-
-    /* Bills */
-    .bills-needed-list {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: var(--space-2);
-    }
-
-    .bill-edit {
-        flex: 1;
-        justify-content: center;
-    }
-
-    .bill-edit input {
-        width: 52px;
-        min-height: 44px;
-    }
-
-    /* Partner Cards */
-    .partner-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .partner-card {
-        padding: var(--space-4);
-    }
-
-    .payout-amount {
-        font-size: 1.375rem;
+    .table-wrapper.compact {
+        overflow-x: visible;
     }
 }
 
@@ -1280,10 +1102,11 @@ body {
 @media (max-width: 400px) {
     body {
         padding: var(--space-2);
+        padding-bottom: calc(var(--action-bar-height) + var(--space-2) + env(safe-area-inset-bottom, 0px));
     }
 
     .app-container {
-        gap: var(--space-3);
+        gap: var(--space-2);
     }
 
     .card {
@@ -1291,199 +1114,73 @@ body {
         border-radius: var(--radius-md);
     }
 
-    .upload-card {
-        padding: var(--space-4) var(--space-3);
-    }
-
-    .upload-icon {
-        width: 64px;
-        height: 64px;
-    }
-
-    .upload-title {
-        font-size: 0.875rem;
-    }
-
-    .partner-name {
-        font-size: 0.9375rem;
-    }
-
-    .payout-amount {
-        font-size: 1.25rem;
-    }
-}
-
-/* Mobile Card Layout for Data Table (480px) */
-@media (max-width: 480px) {
-    .data-table thead {
-        position: absolute;
-        left: -9999px;
-        visibility: hidden;
-    }
-
-    .data-table {
-        min-width: unset;
-        width: 100%;
-    }
-
-    .data-table tbody tr {
-        display: flex;
-        flex-wrap: wrap;
-        background: var(--card-glass);
-        border: 1px solid var(--card-border);
-        border-radius: var(--radius-md);
-        padding: var(--space-4);
-        margin-bottom: var(--space-3);
+    .quick-input-grid {
         gap: var(--space-2);
-        position: relative;
-    }
-
-    .data-table td {
-        display: flex;
-        flex-direction: column;
-        border-bottom: none;
-        padding: var(--space-1) 0;
-    }
-
-    /* Name - full width */
-    .data-table td:nth-child(1) {
-        flex: 1 1 100%;
-        order: 1;
-    }
-
-    /* Partner # - half */
-    .data-table td:nth-child(2) {
-        flex: 1 1 45%;
-        order: 2;
-    }
-
-    /* Hours - half */
-    .data-table td:nth-child(3) {
-        flex: 1 1 45%;
-        order: 3;
-    }
-
-    /* Delete - positioned */
-    .data-table td:nth-child(4) {
-        position: absolute;
-        right: var(--space-3);
-        top: var(--space-3);
-    }
-
-    .data-table tbody tr {
-        padding-right: calc(44px + var(--space-4));
-    }
-
-    /* Labels */
-    .data-table td:nth-child(1)::before,
-    .data-table td:nth-child(2)::before,
-    .data-table td:nth-child(3)::before {
-        font-weight: 700;
-        color: var(--text-muted);
-        font-size: 0.6875rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin-bottom: var(--space-1);
-    }
-
-    .data-table td:nth-child(1)::before {
-        content: "Name";
-    }
-
-    .data-table td:nth-child(2)::before {
-        content: "Partner #";
-    }
-
-    .data-table td:nth-child(3)::before {
-        content: "Hours";
-    }
-
-    .data-table .cell-input {
-        background: rgba(0, 0, 0, 0.2);
-        border-radius: var(--radius-sm);
-        padding: var(--space-3);
-        min-height: 48px;
-        font-size: 16px !important;
-    }
-
-    .table-wrapper {
-        overflow-x: visible;
-        margin: 0;
-        padding: 0;
     }
 }
 
-/* Touch Device Optimizations */
-@media (hover: none) and (pointer: coarse) {
-
-    .btn,
-    .btn-icon,
-    .upload-btn,
-    .icon-button {
-        min-height: 48px;
-    }
-
-    .cell-input {
-        min-height: 48px;
-    }
-
-    /* Remove hover transforms on touch */
-    .card:hover,
-    .btn-primary:hover,
-    .upload-btn:hover {
-        transform: none;
-    }
-
-    /* Active states for touch feedback */
-    .btn:active {
-        transform: scale(0.98);
-        opacity: 0.9;
-    }
-
-    .card:active {
-        transform: scale(0.99);
-    }
-
-    .upload-btn:active {
-        background: var(--starbucks-green-light);
-    }
-}
-
-/* Landscape Mobile */
-@media (max-width: 900px) and (orientation: landscape) {
-    body {
-        padding: var(--space-3) var(--space-4);
-    }
-
+/* Desktop (769px+) */
+@media (min-width: 769px) {
     .app-container {
-        max-width: 100%;
-    }
-
-    .grid.two-column {
-        grid-template-columns: 1fr 1fr;
+        max-width: 600px;
     }
 
     .partner-grid {
         grid-template-columns: repeat(2, 1fr);
     }
 
-    .upload-card {
-        padding: var(--space-4);
-    }
-
-    .upload-icon {
-        width: 56px;
-        height: 56px;
-        margin-bottom: var(--space-3);
+    .sticky-action-bar {
+        max-width: 600px;
+        left: 50%;
+        transform: translateX(-50%);
     }
 }
 
-/* High contrast / Reduced Motion */
-@media (prefers-reduced-motion: reduce) {
+/* Touch Device Optimizations */
+@media (hover: none) and (pointer: coarse) {
+    .btn-action,
+    .btn-icon,
+    .upload-btn,
+    .icon-button {
+        min-height: 44px;
+    }
 
-    *,
-    *::before,
-    *::after {
+    .cell-input {
+        min-height: 44px;
+    }
+
+    /* Remove hover transforms on touch */
+    .btn-primary:hover,
+    .upload-btn:hover {
+        transform: none;
+    }
+
+    /* Active states for touch feedback */
+    .btn-action:active {
+        transform: scale(0.98);
+        opacity: 0.9;
+    }
+}
+
+/* Landscape Mobile */
+@media (max-width: 900px) and (orientation: landscape) {
+    body {
+        padding: var(--space-2) var(--space-4);
+        padding-bottom: calc(var(--action-bar-height) + var(--space-2));
+    }
+
+    .app-container {
+        max-width: 100%;
+    }
+
+    .quick-input-grid {
+        grid-template-columns: 1fr 1fr 1fr 1fr;
+    }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
@@ -1498,16 +1195,11 @@ body {
         padding: 20px;
     }
 
-    .card {
-        background: white;
-        border: 1px solid #ddd;
-        box-shadow: none;
-    }
-
-    .upload-card,
-    .tips-action-card,
-    .header-actions {
-        display: none;
+    .sticky-action-bar,
+    .collapsible-section,
+    .header,
+    .footer {
+        display: none !important;
     }
 
     .results-card {
@@ -1516,49 +1208,19 @@ body {
 }
 
 /* ============================================
-   FOOTER - Store Link Styling
+   LEGACY SUPPORT - Hide old elements
    ============================================ */
-.footer {
-    text-align: center;
-    padding: var(--space-4) 0;
-    color: var(--text-muted);
-    font-size: 0.875rem;
-}
-
-.footer p {
-    margin: var(--space-2) 0;
-}
-
-.footer strong {
-    color: var(--text-primary);
-}
-
-.store-info {
-    margin-top: var(--space-3);
-}
-
-.store-link {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
-    color: var(--text-muted);
-    text-decoration: none;
-    padding: var(--space-2) var(--space-4);
-    border-radius: var(--radius-full);
-    background: var(--card-glass);
-    border: 1px solid var(--card-border);
-    transition: all var(--transition-base);
-    font-size: 0.8125rem;
-}
-
-.store-link:hover,
-.store-link:focus {
-    color: var(--starbucks-green-light);
-    background: rgba(0, 168, 98, 0.1);
-    border-color: rgba(0, 168, 98, 0.3);
-    transform: translateY(-1px);
-}
-
-.store-link:active {
-    transform: translateY(0);
+.upload-card,
+.tips-action-card,
+.holiday-toggle-btn,
+.summary-grid,
+.details-grid,
+.partner-body,
+.metric,
+.bills-row,
+.bill-input,
+.upload-icon,
+.upload-title,
+.two-column {
+    display: none !important;
 }
