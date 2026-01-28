@@ -1473,6 +1473,12 @@ function runCalculations() {
         hourlyRateDisplay.textContent = `$${hourlyRateTruncated.toFixed(2)} per hour`;
     }
 
+    // Also update the results header hourly rate pill
+    const resultsHourlyRate = document.getElementById('results-hourly-rate');
+    if (resultsHourlyRate) {
+        resultsHourlyRate.textContent = `$${hourlyRateTruncated.toFixed(2)}/hr`;
+    }
+
     // 2. Per-partner calculations
     const results = [];
     let sumDecimalTips = 0;
@@ -1534,6 +1540,14 @@ function clearResults() {
     }
     if (resultsBody) {
         resultsBody.innerHTML = "";
+    }
+    // Clear hourly rate displays
+    if (hourlyRateDisplay) {
+        hourlyRateDisplay.textContent = "";
+    }
+    const resultsHourlyRate = document.getElementById('results-hourly-rate');
+    if (resultsHourlyRate) {
+        resultsHourlyRate.textContent = "";
     }
 }
 

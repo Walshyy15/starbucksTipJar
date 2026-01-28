@@ -263,16 +263,40 @@ body {
     margin-left: var(--space-xs);
 }
 
-/* Hourly Rate Display */
-.hourly-rate {
-    text-align: center;
-    padding: var(--space-md);
+/* Hourly Rate Display - Badge (before Partners) */
+.hourly-rate-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    background: rgba(45, 138, 101, 0.15);
+    border: 1px solid rgba(45, 138, 101, 0.3);
+    border-radius: var(--radius-md);
+    padding: var(--space-md) var(--space-lg);
+    margin-bottom: var(--space-lg);
     color: var(--accent-green-bright);
-    font-size: 0.875rem;
-    font-weight: 600;
+    font-size: 1.125rem;
+    font-weight: 700;
 }
 
-.hourly-rate:empty {
+.hourly-rate-badge:empty {
+    display: none;
+}
+
+/* Hourly Rate Display - Pill (in results header) */
+.hourly-rate-pill {
+    display: inline-flex;
+    align-items: center;
+    background: var(--accent-green);
+    border-radius: var(--radius-full);
+    padding: var(--space-xs) var(--space-md);
+    color: var(--text-primary);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    margin-left: var(--space-md);
+}
+
+.hourly-rate-pill:empty {
     display: none;
 }
 
@@ -548,7 +572,14 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
     margin-bottom: var(--space-lg);
+}
+
+.results-title-row {
+    display: flex;
+    align-items: center;
 }
 
 .results-header h2 {

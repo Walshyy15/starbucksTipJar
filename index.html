@@ -203,7 +203,7 @@
             </div>
 
             <!-- Hourly Rate Display (shown after calculation) -->
-            <div id="hourly-rate-display" class="hourly-rate"></div>
+            <div id="hourly-rate-display" class="hourly-rate-badge"></div>
 
             <!-- Partners Section -->
             <div class="partners-section">
@@ -266,7 +266,10 @@
         <!-- Results Section - Shows After Calculation -->
         <section class="results-card" id="results-section">
             <div class="results-header">
-                <h2>Distribution</h2>
+                <div class="results-title-row">
+                    <h2>Distribution</h2>
+                    <span class="hourly-rate-pill" id="results-hourly-rate"></span>
+                </div>
                 <span class="date-pill" id="distribution-date"></span>
             </div>
 
