@@ -1357,6 +1357,14 @@ function renderPartnerTable() {
     partnerTableBody.querySelectorAll("button[data-action='delete']").forEach((btn) => {
         btn.addEventListener("click", handleDeletePartner);
     });
+
+    // Toggle empty state visibility
+    const emptyState = document.getElementById('empty-state');
+    if (emptyState) {
+        // Show empty state only when no partners with data exist
+        const hasPartners = partners.some(p => p.name || p.number || p.hours > 0);
+        emptyState.classList.toggle('hidden', partners.length > 0);
+    }
 }
 
 function handlePartnerInputChange(event) {

@@ -157,25 +157,20 @@
 </head>
 
 <body>
-    <div class="app-container">
+    <div class="app-wrapper">
         <!-- SEO H1 - Visually hidden but accessible to search engines and screen readers -->
         <h1 class="visually-hidden">TipJar – Starbucks Tips Calculator | Estimate Your Weekly Tip Distribution</h1>
 
-        <!-- Compact Header -->
-        <header class="header">
-            <div class="logo">
-                <span class="logo-text">TipJar</span>
-            </div>
+        <!-- Header Badge -->
+        <header class="header-badge">
+            <span class="badge-text">TipJar</span>
         </header>
 
-        <!-- Main Content - Compact Layout -->
-        <main class="main-content">
-
-            <!-- ============================================
-                 UPLOAD REPORT - Inline Button
-                 ============================================ -->
-            <div class="upload-button-wrapper" id="upload-section">
-                <label class="btn btn-action btn-primary btn-upload" tabindex="0">
+        <!-- Main Card Container -->
+        <main class="main-card">
+            <!-- Upload Report Button - Centered Pill -->
+            <div class="upload-section" id="upload-section">
+                <label class="upload-btn" tabindex="0">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                         stroke-linejoin="round">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -188,152 +183,138 @@
                 <div id="ocr-status" class="ocr-status"></div>
             </div>
 
-            <!-- ============================================
-                 PRIMARY INPUT SECTION - Always Visible Above Fold
-                 Two-column grid for compact data entry
-                 ============================================ -->
-            <section class="card input-card" id="input-section">
-                <!-- Quick Input Grid: Total Tips + Total Hours side by side -->
-                <div class="quick-input-grid">
-                    <div class="quick-input-item">
-                        <label for="total-tips">Total Tips</label>
-                        <div class="input-wrapper compact">
-                            <span class="currency-symbol">$</span>
-                            <input id="total-tips" type="number" min="0" step="0.01" placeholder="0.00"
-                                aria-label="Total tip amount in dollars" inputmode="decimal" />
-                        </div>
+            <!-- Input Grid: Total Tips + Total Hours -->
+            <div class="input-grid">
+                <div class="input-group">
+                    <label class="input-label">TOTAL TIPS</label>
+                    <div class="input-field">
+                        <span class="prefix">$</span>
+                        <input id="total-tips" type="number" min="0" step="0.01" placeholder="0.00"
+                            aria-label="Total tip amount in dollars" inputmode="decimal" />
                     </div>
-                    <div class="quick-input-item">
-                        <label>Total Hours</label>
-                        <div class="hours-display">
-                            <span id="total-hours">0.00</span>
-                            <span class="hours-label">hrs</span>
-                        </div>
+                </div>
+                <div class="input-group">
+                    <label class="input-label">TOTAL HOURS</label>
+                    <div class="input-field hours-field">
+                        <span id="total-hours" class="hours-value">0.00</span>
+                        <span class="suffix">hrs</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hourly Rate Display (shown after calculation) -->
+            <div id="hourly-rate-display" class="hourly-rate"></div>
+
+            <!-- Partners Section -->
+            <div class="partners-section">
+                <div class="partners-header">
+                    <h2 class="partners-title">Partners</h2>
+                    <div class="partners-actions">
+                        <button id="add-row-btn" type="button" class="icon-btn" title="Add Partner"
+                            aria-label="Add new partner">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19" />
+                                <line x1="5" y1="12" x2="19" y2="12" />
+                            </svg>
+                        </button>
+                        <button id="clear-table-btn" type="button" class="icon-btn" title="Clear All"
+                            aria-label="Clear all partners">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="3 6 5 6 21 6" />
+                                <path
+                                    d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                            </svg>
+                        </button>
                     </div>
                 </div>
 
-                <!-- Hourly Rate Display (shown after calculation) -->
-                <div id="hourly-rate-display" class="hourly-rate compact"></div>
-
-                <!-- Partner Entry - Compact Inline Form -->
-                <div class="partner-entry-section">
-                    <div class="section-header compact">
-                        <h2>Partners</h2>
-                        <div class="header-actions">
-                            <button id="add-row-btn" type="button" class="btn-icon" title="Add Partner"
-                                aria-label="Add new partner">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                                    stroke-linecap="round" stroke-linejoin="round">
-                                    <line x1="12" y1="5" x2="12" y2="19" />
-                                    <line x1="5" y1="12" x2="19" y2="12" />
-                                </svg>
-                            </button>
-                            <button id="clear-table-btn" type="button" class="btn-icon btn-icon-danger"
-                                title="Clear All" aria-label="Clear all partners">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                    stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="3 6 5 6 21 6" />
-                                    <path
-                                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                    <line x1="10" y1="11" x2="10" y2="17" />
-                                    <line x1="14" y1="11" x2="14" y2="17" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Compact Partner Table -->
-                    <div class="table-wrapper compact">
-                        <table class="data-table compact">
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Partner #</th>
-                                    <th>Hours</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody id="partner-table-body">
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
-            <!-- ============================================
-                 RESULTS SECTION - Shows After Calculation
-                 ============================================ -->
-            <section class="card results-card" id="results-section">
-                <div class="section-header">
-                    <div class="title-group">
-                        <h2>Distribution</h2>
-                    </div>
-                    <div class="pill" id="distribution-date"></div>
+                <!-- Partner Table -->
+                <div class="table-container">
+                    <table class="partners-table">
+                        <thead>
+                            <tr>
+                                <th>NAME</th>
+                                <th>PARTNER #</th>
+                                <th>HOURS</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="partner-table-body">
+                        </tbody>
+                    </table>
                 </div>
 
-                <!-- Calculation Summary - Compact -->
-                <div class="calc-summary compact" id="calc-summary">
-                    <div class="calc-formula" id="calc-formula">Total Tips: $0.00 ÷ Total Hours: 0.00 = $0.00/hr</div>
-
-                    <!-- Bill Breakdown - Collapsible within results -->
-                    <details class="bills-details">
-                        <summary class="bills-summary">
-                            <span>Bills Needed</span>
-                            <span class="bills-hint">(tap to edit)</span>
-                        </summary>
-                        <div class="bills-needed-list" id="bills-needed-list">
-                            <label class="bill-edit">
-                                <input type="number" id="total-twenties" min="0" value="0"
-                                    aria-label="Number of $20 bills" />
-                                <span>× $20</span>
-                            </label>
-                            <label class="bill-edit">
-                                <input type="number" id="total-tens" min="0" value="0"
-                                    aria-label="Number of $10 bills" />
-                                <span>× $10</span>
-                            </label>
-                            <label class="bill-edit">
-                                <input type="number" id="total-fives" min="0" value="0"
-                                    aria-label="Number of $5 bills" />
-                                <span>× $5</span>
-                            </label>
-                            <label class="bill-edit">
-                                <input type="number" id="total-ones" min="0" value="0"
-                                    aria-label="Number of $1 bills" />
-                                <span>× $1</span>
-                            </label>
-                        </div>
-                    </details>
+                <!-- Empty State Placeholder -->
+                <div class="empty-state" id="empty-state">
+                    <div class="empty-icon">💰</div>
+                    <p class="empty-text">Upload a report or add partners to begin</p>
                 </div>
-
-                <!-- Partner Cards Grid -->
-                <div class="partner-grid" id="results-body"></div>
-            </section>
+            </div>
         </main>
 
-        <!-- Compact Footer -->
-        <footer class="footer compact">
-            <p>Made with ☕ by <strong>William Walsh</strong></p>
-            <p class="store-info">
-                <a href="https://maps.google.com/maps?q=Starbucks,+139+Endicott+St,+Danvers,+MA+01923" target="_blank"
-                    rel="noopener noreferrer" class="store-link">
-                    Store# 66900
-                </a>
-            </p>
+        <!-- Footer - Above sticky bar -->
+        <footer class="footer">
+            <p>Made with <span class="heart">💚</span> by <strong>William Walsh</strong></p>
+            <a href="https://maps.google.com/maps?q=Starbucks,+139+Endicott+St,+Danvers,+MA+01923" target="_blank"
+                rel="noopener noreferrer" class="store-badge">
+                Store# 66900
+            </a>
         </footer>
 
-        <!-- ============================================
-             STICKY ACTION BAR - Always Visible at Bottom
-             Contains the Calculate button for easy access
-             ============================================ -->
-        <div class="sticky-action-bar">
-            <button id="calculate-btn" type="button" class="btn btn-primary btn-action">
+        <!-- Results Section - Shows After Calculation -->
+        <section class="results-card" id="results-section">
+            <div class="results-header">
+                <h2>Distribution</h2>
+                <span class="date-pill" id="distribution-date"></span>
+            </div>
+
+            <!-- Calculation Summary -->
+            <div class="calc-summary" id="calc-summary">
+                <div class="calc-formula" id="calc-formula">Total Tips: $0.00 ÷ Total Hours: 0.00 = $0.00/hr</div>
+
+                <!-- Bill Breakdown - Collapsible -->
+                <details class="bills-details">
+                    <summary class="bills-summary">
+                        <span>Bills Needed</span>
+                        <span class="bills-hint">(tap to edit)</span>
+                    </summary>
+                    <div class="bills-grid" id="bills-needed-list">
+                        <label class="bill-input">
+                            <input type="number" id="total-twenties" min="0" value="0"
+                                aria-label="Number of $20 bills" />
+                            <span>× $20</span>
+                        </label>
+                        <label class="bill-input">
+                            <input type="number" id="total-tens" min="0" value="0" aria-label="Number of $10 bills" />
+                            <span>× $10</span>
+                        </label>
+                        <label class="bill-input">
+                            <input type="number" id="total-fives" min="0" value="0" aria-label="Number of $5 bills" />
+                            <span>× $5</span>
+                        </label>
+                        <label class="bill-input">
+                            <input type="number" id="total-ones" min="0" value="0" aria-label="Number of $1 bills" />
+                            <span>× $1</span>
+                        </label>
+                    </div>
+                </details>
+            </div>
+
+            <!-- Partner Cards Grid -->
+            <div class="partner-grid" id="results-body"></div>
+        </section>
+
+        <!-- Sticky Calculate Button -->
+        <div class="sticky-bar">
+            <button id="calculate-btn" type="button" class="calculate-btn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                     stroke-linejoin="round">
                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                     <polyline points="22 4 12 14.01 9 11.01" />
                 </svg>
-                Calculate
+                <span>Calculate</span>
             </button>
         </div>
     </div>
@@ -342,27 +323,6 @@
     <script src="app.js"></script>
     <!-- Holiday Dashboard Module (separate add-on) -->
     <script src="holiday-dashboard.js"></script>
-
-    <!-- Collapsible Section Logic -->
-    <script>
-        // Toggle collapsible sections
-        document.querySelectorAll('.collapsible-header').forEach(header => {
-            header.addEventListener('click', function () {
-                const section = this.closest('.collapsible-section');
-                const content = section.querySelector('.collapsible-content');
-                const isExpanded = this.getAttribute('aria-expanded') === 'true';
-
-                this.setAttribute('aria-expanded', !isExpanded);
-                section.classList.toggle('expanded', !isExpanded);
-
-                if (!isExpanded) {
-                    content.style.maxHeight = content.scrollHeight + 'px';
-                } else {
-                    content.style.maxHeight = '0';
-                }
-            });
-        });
-    </script>
 </body>
 
 </html>
