@@ -224,6 +224,93 @@ body {
 }
 
 /* ============================================
+   BILL NOTIFICATION - Leftover/Shortfall Alerts
+   ============================================ */
+.bill-notification {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    margin-top: var(--space-3);
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.bill-notification.info {
+    background: rgba(0, 117, 74, 0.12);
+    border: 1px solid rgba(0, 168, 98, 0.3);
+    color: var(--starbucks-green-light);
+}
+
+.bill-notification.warning {
+    background: rgba(245, 166, 35, 0.12);
+    border: 1px solid rgba(245, 166, 35, 0.4);
+    color: var(--warning);
+}
+
+.notification-content {
+    flex: 1;
+}
+
+.notification-section {
+    margin-bottom: var(--space-2);
+}
+
+.notification-section:last-child {
+    margin-bottom: 0;
+}
+
+.notification-section strong {
+    display: block;
+    margin-bottom: var(--space-1);
+}
+
+.notification-section p {
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.shortfall-list {
+    margin: var(--space-1) 0 0 var(--space-4);
+    padding: 0;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.shortfall-list li {
+    margin-bottom: var(--space-1);
+}
+
+.notification-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.25rem;
+    line-height: 1;
+    padding: 0;
+    cursor: pointer;
+    transition: color var(--transition-fast);
+}
+
+.notification-close:hover {
+    color: var(--text-primary);
+}
+
+/* ============================================
    CARDS - Compact Glassmorphism
    ============================================ */
 .card {

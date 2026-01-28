@@ -1615,8 +1615,8 @@ let lastHourlyRate = 0;
  * Redistribute bills when user manually edits the bill counts.
  * This function reads the edited bill totals and redistributes them
  * across partners based on their payout amounts.
- * If one bill type is insufficient, it will try to make up the difference
- * using other denominations.
+ * It will NEVER overpay - only exact amounts or underpay if insufficient bills.
+ * Shows notification for leftover bills and any shortfall.
  */
 function redistributeBills() {
     if (lastCalculationResults.length === 0) return;
@@ -1643,14 +1643,14 @@ function redistributeBills() {
     // Calculate total needed
     const totalNeeded = lastCalculationResults.reduce((sum, p) => sum + p.wholeDollarPayout, 0);
 
-    // If not enough total cash, we can't fully redistribute
-    // But we'll still do our best with what's available
-
     // Create a copy with original indices to maintain order
     let remainingBills = { ...availableBills };
 
     // Track totals for updating the UI
     let usedBills = { twenties: 0, tens: 0, fives: 0, ones: 0 };
+
+    // Track shortfalls per partner
+    const shortfalls = [];
 
     // Create indexed array for sorting while preserving original indices
     const indexedResults = lastCalculationResults.map((partner, index) => ({
@@ -1671,6 +1671,8 @@ function redistributeBills() {
         const breakdown = { twenties: 0, tens: 0, fives: 0, ones: 0 };
 
         // Try to allocate bills in order of preference: $20, $10, $5, $1
+        // ONLY allocate if it doesn't exceed the remaining amount needed
+
         // Allocate twenties
         while (remaining >= 20 && remainingBills.twenties > 0) {
             breakdown.twenties++;
@@ -1699,23 +1701,14 @@ function redistributeBills() {
             remaining -= 1;
         }
 
-        // If still have remaining, try to make change from larger bills
-        // e.g., if we need $3 but have no $1s, use a $5 and note overpayment
+        // Track shortfall if we couldn't fully pay this partner
         if (remaining > 0) {
-            // Try to use a $5 for remaining 1-4, or $10 for remaining 5-9, etc.
-            if (remaining <= 4 && remainingBills.fives > 0) {
-                breakdown.fives++;
-                remainingBills.fives--;
-                remaining = 0; // Slight overpay is acceptable
-            } else if (remaining <= 9 && remainingBills.tens > 0) {
-                breakdown.tens++;
-                remainingBills.tens--;
-                remaining = 0;
-            } else if (remaining <= 19 && remainingBills.twenties > 0) {
-                breakdown.twenties++;
-                remainingBills.twenties--;
-                remaining = 0;
-            }
+            shortfalls.push({
+                name: partner.name,
+                owed: partner.wholeDollarPayout,
+                received: partner.wholeDollarPayout - remaining,
+                shortfall: remaining
+            });
         }
 
         // Track used bills
@@ -1727,9 +1720,22 @@ function redistributeBills() {
         // Store breakdown by unique key for later matching
         breakdownMap.set(partner.uniqueKey, {
             breakdown,
-            adjustedPayout: partner.wholeDollarPayout - remaining
+            adjustedPayout: partner.wholeDollarPayout - remaining,
+            hasShortfall: remaining > 0,
+            shortfallAmount: remaining
         });
     }
+
+    // Calculate leftover bills
+    const leftoverBills = {
+        twenties: remainingBills.twenties,
+        tens: remainingBills.tens,
+        fives: remainingBills.fives,
+        ones: remainingBills.ones
+    };
+    const leftoverValue = (leftoverBills.twenties * 20) + (leftoverBills.tens * 10) +
+        (leftoverBills.fives * 5) + (leftoverBills.ones * 1);
+    const hasLeftovers = leftoverValue > 0;
 
     // Build final results in ORIGINAL order by matching unique keys
     const updatedResults = lastCalculationResults.map(partner => {
@@ -1740,7 +1746,9 @@ function redistributeBills() {
             return {
                 ...partner,
                 breakdown: redistributed.breakdown,
-                adjustedPayout: redistributed.adjustedPayout
+                adjustedPayout: redistributed.adjustedPayout,
+                hasShortfall: redistributed.hasShortfall,
+                shortfallAmount: redistributed.shortfallAmount
             };
         }
 
@@ -1754,6 +1762,78 @@ function redistributeBills() {
 
     // Re-render partner cards with new breakdown (in original order)
     renderResultsTable(updatedResults, lastHourlyRate);
+
+    // Show notification for leftover bills or shortfalls
+    showBillNotification(leftoverBills, leftoverValue, shortfalls, totalNeeded, totalAvailable);
+}
+
+/**
+ * Display notification about leftover bills or shortfalls
+ */
+function showBillNotification(leftoverBills, leftoverValue, shortfalls, totalNeeded, totalAvailable) {
+    // Remove any existing notification
+    const existingNotification = document.getElementById('bill-notification');
+    if (existingNotification) {
+        existingNotification.remove();
+    }
+
+    const hasLeftovers = leftoverValue > 0;
+    const hasShortfalls = shortfalls.length > 0;
+
+    // If nothing to show, don't create notification
+    if (!hasLeftovers && !hasShortfalls) return;
+
+    // Build notification content
+    let notificationHtml = '';
+    let notificationType = 'info';
+
+    if (hasShortfalls) {
+        notificationType = 'warning';
+        const totalShortfall = shortfalls.reduce((sum, s) => sum + s.shortfall, 0);
+        notificationHtml += `<div class="notification-section">
+            <strong>⚠️ Shortfall: $${totalShortfall}</strong>
+            <p>Not enough bills to fully pay ${shortfalls.length} partner(s):</p>
+            <ul class="shortfall-list">
+                ${shortfalls.map(s => `<li>${escapeHtml(s.name)}: needs $${s.owed}, can only give $${s.received} (short $${s.shortfall})</li>`).join('')}
+            </ul>
+        </div>`;
+    }
+
+    if (hasLeftovers) {
+        const leftoverParts = [];
+        if (leftoverBills.twenties > 0) leftoverParts.push(`${leftoverBills.twenties}×$20`);
+        if (leftoverBills.tens > 0) leftoverParts.push(`${leftoverBills.tens}×$10`);
+        if (leftoverBills.fives > 0) leftoverParts.push(`${leftoverBills.fives}×$5`);
+        if (leftoverBills.ones > 0) leftoverParts.push(`${leftoverBills.ones}×$1`);
+
+        notificationHtml += `<div class="notification-section">
+            <strong>📦 Leftover Bills: $${leftoverValue}</strong>
+            <p>${leftoverParts.join(' + ')} will not be used</p>
+        </div>`;
+    }
+
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.id = 'bill-notification';
+    notification.className = `bill-notification ${notificationType}`;
+    notification.innerHTML = `
+        <div class="notification-content">
+            ${notificationHtml}
+        </div>
+        <button type="button" class="notification-close" onclick="this.parentElement.remove()" aria-label="Close notification">×</button>
+    `;
+
+    // Insert after bills-needed section
+    const billsDetails = document.querySelector('.bills-details');
+    if (billsDetails) {
+        billsDetails.after(notification);
+    } else {
+        // Fallback - insert at top of calc-summary
+        const calcSummary = document.getElementById('calc-summary');
+        if (calcSummary) {
+            calcSummary.appendChild(notification);
+        }
+    }
 }
 
 // ---------- SIMPLE HTML ESCAPING HELPERS ----------
