@@ -171,88 +171,18 @@ body {
 }
 
 /* ============================================
-   UPLOAD REPORT BUTTON - Sleek Glass Style
+   UPLOAD REPORT BUTTON - Same style as Calculate
    ============================================ */
 .upload-button-wrapper {
-    margin-bottom: var(--space-2);
+    margin-bottom: var(--space-3);
 }
 
-.upload-report-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-2);
-    width: 100%;
-    padding: var(--space-3) var(--space-4);
-    background: linear-gradient(145deg, rgba(0, 117, 74, 0.15) 0%, rgba(0, 168, 98, 0.08) 100%);
-    border: 1.5px solid rgba(0, 168, 98, 0.3);
-    border-radius: var(--radius-lg);
-    color: var(--starbucks-green-light);
-    font-family: inherit;
-    font-size: 0.875rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all var(--transition-fast);
+.btn-upload {
     position: relative;
     overflow: hidden;
 }
 
-.upload-report-btn::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(0, 168, 98, 0.1) 0%, transparent 50%);
-    opacity: 0;
-    transition: opacity var(--transition-fast);
-}
-
-.upload-report-btn:hover,
-.upload-report-btn:focus-visible {
-    background: linear-gradient(145deg, rgba(0, 117, 74, 0.25) 0%, rgba(0, 168, 98, 0.15) 100%);
-    border-color: var(--starbucks-green-light);
-    box-shadow: 0 0 20px rgba(0, 168, 98, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    transform: translateY(-1px);
-}
-
-.upload-report-btn:hover::before,
-.upload-report-btn:focus-visible::before {
-    opacity: 1;
-}
-
-.upload-report-btn:active {
-    transform: translateY(0);
-}
-
-.upload-report-btn svg {
-    width: 18px;
-    height: 18px;
-    flex-shrink: 0;
-    transition: transform var(--transition-fast);
-}
-
-.upload-report-btn:hover svg {
-    transform: translateY(-2px);
-    animation: float-arrow 1.5s ease-in-out infinite;
-}
-
-@keyframes float-arrow {
-
-    0%,
-    100% {
-        transform: translateY(-2px);
-    }
-
-    50% {
-        transform: translateY(-5px);
-    }
-}
-
-.upload-report-btn span {
-    position: relative;
-    z-index: 1;
-}
-
-.upload-report-btn input[type="file"] {
+.btn-upload input[type="file"] {
     position: absolute;
     inset: 0;
     width: 100%;
