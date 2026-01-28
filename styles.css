@@ -610,69 +610,86 @@ body {
     margin-bottom: var(--space-md);
 }
 
-/* Bills Details */
+/* Bills Details - Prominent Section */
 .bills-details {
-    background: rgba(25, 45, 35, 0.5);
-    border: 1px solid var(--input-border);
+    background: rgba(45, 138, 101, 0.12);
+    border: 2px solid var(--accent-green);
     border-radius: var(--radius-md);
     overflow: hidden;
+    box-shadow: 0 0 20px rgba(45, 138, 101, 0.2);
 }
 
 .bills-summary {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: var(--space-md) var(--space-lg);
+    padding: var(--space-lg);
     cursor: pointer;
-    font-size: 0.875rem;
-    font-weight: 600;
+    font-size: 1rem;
+    font-weight: 700;
     color: var(--text-primary);
     list-style: none;
+    background: rgba(45, 138, 101, 0.15);
+    border-bottom: 1px solid rgba(45, 138, 101, 0.3);
 }
 
 .bills-summary::-webkit-details-marker {
     display: none;
 }
 
+.bills-title {
+    font-size: 1.0625rem;
+    font-weight: 700;
+}
+
 .bills-hint {
     font-weight: 400;
-    color: var(--text-hint);
+    color: var(--accent-green-bright);
     font-size: 0.75rem;
 }
 
 .bills-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: var(--space-sm);
-    padding: var(--space-md) var(--space-lg);
-    padding-top: 0;
+    gap: var(--space-md);
+    padding: var(--space-lg);
 }
 
 .bill-input {
     display: flex;
+    flex-direction: column;
     align-items: center;
     gap: var(--space-xs);
-    background: rgba(15, 35, 28, 0.8);
-    border: 1px solid var(--input-border);
-    border-radius: var(--radius-sm);
-    padding: var(--space-sm);
+    background: rgba(15, 35, 28, 0.9);
+    border: 2px solid var(--input-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    transition: all var(--transition);
+}
+
+.bill-input:hover,
+.bill-input:focus-within {
+    border-color: var(--accent-green);
+    background: rgba(45, 138, 101, 0.1);
 }
 
 .bill-input input {
-    width: 40px;
+    width: 100%;
+    max-width: 60px;
     background: transparent;
     border: none;
     color: var(--text-primary);
     font-family: inherit;
-    font-size: 0.875rem;
-    font-weight: 600;
+    font-size: 1.25rem;
+    font-weight: 700;
     text-align: center;
     outline: none;
 }
 
 .bill-input span {
-    font-size: 0.75rem;
-    color: var(--text-muted);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--accent-green-bright);
     white-space: nowrap;
 }
 
