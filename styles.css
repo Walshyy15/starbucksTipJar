@@ -245,6 +245,8 @@ body {
 
 .input-field input::placeholder {
     color: var(--text-hint);
+    font-size: 0.875rem;
+    font-weight: 400;
 }
 
 .hours-field {
