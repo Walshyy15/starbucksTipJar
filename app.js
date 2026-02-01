@@ -272,14 +272,57 @@ document.addEventListener("DOMContentLoaded", () => {
         calculateBtn.addEventListener("click", runCalculations);
     }
 
-    // Bill count edit listeners - redistribute when changed
-    const billInputs = ['total-twenties', 'total-tens', 'total-fives', 'total-ones'];
-    billInputs.forEach(id => {
+    // Bill count edit listeners - redistribute when changed + update total display
+    const billInputIds = ['total-twenties', 'total-tens', 'total-fives', 'total-ones'];
+    billInputIds.forEach(id => {
         const input = document.getElementById(id);
         if (input) {
-            input.addEventListener('input', redistributeBills);
+            input.addEventListener('input', () => {
+                redistributeBills();
+                updateBillsTotalDisplay();
+            });
         }
     });
+
+    // Bills Reset Button
+    const billsResetBtn = document.getElementById('bills-reset-btn');
+    if (billsResetBtn) {
+        billsResetBtn.addEventListener('click', resetBillsToOptimal);
+    }
+
+    // Bills Preset Buttons
+    const presetNoTwenties = document.getElementById('preset-no-twenties');
+    const presetNoTens = document.getElementById('preset-no-tens');
+    const presetFillOnes = document.getElementById('preset-fill-ones');
+
+    if (presetNoTwenties) {
+        presetNoTwenties.addEventListener('click', () => applyBillPreset('no-twenties'));
+    }
+    if (presetNoTens) {
+        presetNoTens.addEventListener('click', () => applyBillPreset('no-tens'));
+    }
+    if (presetFillOnes) {
+        presetFillOnes.addEventListener('click', () => applyBillPreset('fill-ones'));
+    }
+
+    // ---------- ONBOARDING HINT ----------
+    const onboardingHint = document.getElementById('onboarding-hint');
+    const dismissOnboardingBtn = document.getElementById('dismiss-onboarding');
+
+    // Check if user has already dismissed the hint
+    if (onboardingHint && localStorage.getItem('tipjar_onboarding_dismissed') === 'true') {
+        onboardingHint.classList.add('hidden');
+    }
+
+    if (dismissOnboardingBtn) {
+        dismissOnboardingBtn.addEventListener('click', () => {
+            if (onboardingHint) {
+                onboardingHint.classList.add('hidden');
+                localStorage.setItem('tipjar_onboarding_dismissed', 'true');
+            }
+        });
+    }
+
 
     // ---------- INITIALIZATION ----------
     // Check Azure configuration
@@ -1610,6 +1653,10 @@ function renderSummary(
         calcFormula.textContent = `Total Tips: $${totalTipsVal.toFixed(2)} ÷ Total Hours: ${totalHours.toFixed(2)} = $${hourlyRateTruncated.toFixed(2)} per hour`;
     }
 
+    // Store optimal bill counts for reset functionality
+    optimalBillCounts = { ...totalsBills };
+    totalPayoutNeeded = sumWholeDollarPayout;
+
     // Update editable bill input fields
     const twentiesInput = document.getElementById('total-twenties');
     const tensInput = document.getElementById('total-tens');
@@ -1620,6 +1667,9 @@ function renderSummary(
     if (tensInput) tensInput.value = totalsBills.tens;
     if (fivesInput) fivesInput.value = totalsBills.fives;
     if (onesInput) onesInput.value = totalsBills.ones;
+
+    // Update bills total display
+    updateBillsTotalDisplay();
 
     // Update distribution date
     if (distributionDateEl) {
@@ -1632,6 +1682,10 @@ function renderSummary(
 // Store the last calculation results for redistribution
 let lastCalculationResults = [];
 let lastHourlyRate = 0;
+
+// Store the optimal bill counts for reset functionality
+let optimalBillCounts = { twenties: 0, tens: 0, fives: 0, ones: 0 };
+let totalPayoutNeeded = 0;
 
 /**
  * Redistribute bills when user manually edits the bill counts.
@@ -1856,6 +1910,148 @@ function showBillNotification(leftoverBills, leftoverValue, shortfalls, totalNee
             calcSummary.appendChild(notification);
         }
     }
+}
+
+
+
+/**
+ * Update the bills total display with live value and comparison to needed amount.
+ * Also updates visual feedback states (match, surplus, shortfall).
+ */
+function updateBillsTotalDisplay() {
+    const twentiesInput = document.getElementById('total-twenties');
+    const tensInput = document.getElementById('total-tens');
+    const fivesInput = document.getElementById('total-fives');
+    const onesInput = document.getElementById('total-ones');
+
+    const twenties = parseInt(twentiesInput?.value) || 0;
+    const tens = parseInt(tensInput?.value) || 0;
+    const fives = parseInt(fivesInput?.value) || 0;
+    const ones = parseInt(onesInput?.value) || 0;
+
+    const totalValue = (twenties * 20) + (tens * 10) + (fives * 5) + ones;
+
+    // Update total value display
+    const totalValueEl = document.getElementById('bills-total-value');
+    const comparisonEl = document.getElementById('bills-total-comparison');
+    const billsGrid = document.getElementById('bills-needed-list');
+
+    if (totalValueEl) {
+        totalValueEl.textContent = `$${totalValue}`;
+    }
+
+    // Update comparison badge and visual feedback
+    if (comparisonEl && billsGrid) {
+        // Remove existing state classes
+        comparisonEl.classList.remove('match', 'surplus', 'shortfall');
+        billsGrid.classList.remove('match', 'surplus', 'shortfall');
+
+        if (totalPayoutNeeded === 0) {
+            comparisonEl.textContent = '';
+        } else if (totalValue === totalPayoutNeeded) {
+            comparisonEl.textContent = '✓ Exact match';
+            comparisonEl.classList.add('match');
+            billsGrid.classList.add('match');
+        } else if (totalValue > totalPayoutNeeded) {
+            const surplus = totalValue - totalPayoutNeeded;
+            comparisonEl.textContent = `+$${surplus} surplus`;
+            comparisonEl.classList.add('surplus');
+            billsGrid.classList.add('surplus');
+        } else {
+            const shortfall = totalPayoutNeeded - totalValue;
+            comparisonEl.textContent = `-$${shortfall} short`;
+            comparisonEl.classList.add('shortfall');
+            billsGrid.classList.add('shortfall');
+        }
+    }
+}
+
+/**
+ * Reset bill counts to the optimal distribution calculated during runCalculations.
+ */
+function resetBillsToOptimal() {
+    const twentiesInput = document.getElementById('total-twenties');
+    const tensInput = document.getElementById('total-tens');
+    const fivesInput = document.getElementById('total-fives');
+    const onesInput = document.getElementById('total-ones');
+
+    if (twentiesInput) twentiesInput.value = optimalBillCounts.twenties;
+    if (tensInput) tensInput.value = optimalBillCounts.tens;
+    if (fivesInput) fivesInput.value = optimalBillCounts.fives;
+    if (onesInput) onesInput.value = optimalBillCounts.ones;
+
+    // Re-render with optimal distribution
+    redistributeBills();
+    updateBillsTotalDisplay();
+
+    // Remove any existing notification
+    const existingNotification = document.getElementById('bill-notification');
+    if (existingNotification) {
+        existingNotification.remove();
+    }
+}
+
+/**
+ * Apply a bill preset configuration.
+ * @param {string} preset - 'no-twenties', 'no-tens', or 'fill-ones'
+ */
+function applyBillPreset(preset) {
+    if (lastCalculationResults.length === 0) return;
+
+    // Calculate total payout needed
+    const needed = lastCalculationResults.reduce((sum, p) => sum + p.wholeDollarPayout, 0);
+
+    let newBills = { twenties: 0, tens: 0, fives: 0, ones: 0 };
+    let remaining = needed;
+
+    switch (preset) {
+        case 'no-twenties':
+            // Distribute using only $10, $5, $1
+            newBills.tens = Math.floor(remaining / 10);
+            remaining -= newBills.tens * 10;
+            newBills.fives = Math.floor(remaining / 5);
+            remaining -= newBills.fives * 5;
+            newBills.ones = remaining;
+            break;
+
+        case 'no-tens':
+            // Distribute using $20, $5, $1
+            newBills.twenties = Math.floor(remaining / 20);
+            remaining -= newBills.twenties * 20;
+            newBills.fives = Math.floor(remaining / 5);
+            remaining -= newBills.fives * 5;
+            newBills.ones = remaining;
+            break;
+
+        case 'fill-ones':
+            // Keep current $20, $10, $5 counts and fill the gap with $1s
+            const twentiesInput = document.getElementById('total-twenties');
+            const tensInput = document.getElementById('total-tens');
+            const fivesInput = document.getElementById('total-fives');
+
+            newBills.twenties = parseInt(twentiesInput?.value) || 0;
+            newBills.tens = parseInt(tensInput?.value) || 0;
+            newBills.fives = parseInt(fivesInput?.value) || 0;
+
+            const currentTotal = (newBills.twenties * 20) + (newBills.tens * 10) + (newBills.fives * 5);
+            newBills.ones = Math.max(0, needed - currentTotal);
+            break;
+    }
+
+    // Update bill inputs
+    const twentiesInputEl = document.getElementById('total-twenties');
+    const tensInputEl = document.getElementById('total-tens');
+    const fivesInputEl = document.getElementById('total-fives');
+    const onesInputEl = document.getElementById('total-ones');
+
+    if (twentiesInputEl) twentiesInputEl.value = newBills.twenties;
+    if (tensInputEl) tensInputEl.value = newBills.tens;
+    if (fivesInputEl) fivesInputEl.value = newBills.fives;
+    if (onesInputEl) onesInputEl.value = newBills.ones;
+
+    // Redistribute with new bill counts
+    redistributeBills();
+    updateBillsTotalDisplay();
 }
 
 // ---------- SIMPLE HTML ESCAPING HELPERS ----------
