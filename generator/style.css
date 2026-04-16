@@ -160,6 +160,71 @@ button.secondary {
   cursor: pointer;
 }
 
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
+=======
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+.fasting-controls {
+  margin-top: 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.75rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.fasting-toggle {
+  font-weight: 600;
+}
+
+.inline-label {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+select {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.6rem 0.7rem;
+  background: transparent;
+  color: var(--text);
+  width: 100%;
+}
+
+select:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.helper-text {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
 .chip {
   font-size: 0.78rem;
   background: var(--chip);
