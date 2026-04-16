@@ -1,0 +1,194 @@
+[
+  {
+    "name": "Toffee Oat Cloud Cold Brew",
+    "base": "Cold Brew",
+    "customizations": ["oatmilk splash", "toffee nut syrup", "vanilla sweet cream cold foam", "cinnamon dust"],
+    "flavor": "roasty, caramel-like, creamy",
+    "tags": ["cozy", "caramel", "cold", "foam"],
+    "popularity": 95
+  },
+  {
+    "name": "Berry Matcha Sunset",
+    "base": "Iced Matcha Latte",
+    "customizations": ["coconutmilk", "strawberry puree", "light vanilla syrup"],
+    "flavor": "earthy matcha with bright berry",
+    "tags": ["fruity", "matcha", "cold"],
+    "popularity": 82
+  },
+  {
+    "name": "Brown Sugar Chai Float",
+    "base": "Iced Chai Tea Latte",
+    "customizations": ["oatmilk", "brown sugar syrup", "vanilla sweet cream cold foam"],
+    "flavor": "spiced, sweet, velvety",
+    "tags": ["spiced", "cozy", "foam", "cold"],
+    "popularity": 97
+  },
+  {
+    "name": "Cocoa Almond Shaken Espresso",
+    "base": "Shaken Espresso",
+    "customizations": ["almondmilk", "mocha sauce", "one pump hazelnut"],
+    "flavor": "nutty mocha, bold espresso",
+    "tags": ["coffee-forward", "nutty", "cold"],
+    "popularity": 84
+  },
+  {
+    "name": "Honey Vanilla Blonde Latte",
+    "base": "Blonde Latte",
+    "customizations": ["oatmilk", "honey blend", "vanilla syrup"],
+    "flavor": "smooth, mellow sweetness",
+    "tags": ["warm", "cozy", "vanilla"],
+    "popularity": 78
+  },
+  {
+    "name": "Peach Green Tea Spark",
+    "base": "Iced Green Tea",
+    "customizations": ["peach juice blend", "light lemonade", "extra ice"],
+    "flavor": "refreshing, citrus-peach",
+    "tags": ["fruity", "refreshing", "cold"],
+    "popularity": 76
+  },
+  {
+    "name": "Salted Caramel Nitro Cream",
+    "base": "Nitro Cold Brew",
+    "customizations": ["two pumps caramel syrup", "salted cold foam"],
+    "flavor": "silky nitro with salted caramel",
+    "tags": ["caramel", "coffee-forward", "foam"],
+    "popularity": 88
+  },
+  {
+    "name": "Lavender Vanilla Iced Latte",
+    "base": "Iced Latte",
+    "customizations": ["oatmilk", "vanilla syrup", "lavender powder"],
+    "flavor": "floral vanilla, soft espresso",
+    "tags": ["floral", "vanilla", "cold"],
+    "popularity": 70
+  },
+  {
+    "name": "Mocha Cookie Cold Brew",
+    "base": "Cold Brew",
+    "customizations": ["mocha sauce", "vanilla sweet cream cold foam", "cookie crumble topping"],
+    "flavor": "chocolatey, dessert-like",
+    "tags": ["dessert", "chocolate", "foam", "cold"],
+    "popularity": 91
+  },
+  {
+    "name": "Cinnamon Dolce Oat Latte",
+    "base": "Latte",
+    "customizations": ["oatmilk", "cinnamon dolce syrup", "extra cinnamon"],
+    "flavor": "warm spice, bakery sweetness",
+    "tags": ["warm", "spiced", "cozy"],
+    "popularity": 86
+  },
+  {
+    "name": "Mango Dragon Refresher Twist",
+    "base": "Mango Dragonfruit Refresher",
+    "customizations": ["add peach juice", "light coconutmilk"],
+    "flavor": "juicy tropical, creamy finish",
+    "tags": ["fruity", "refreshing", "tropical"],
+    "popularity": 80
+  },
+  {
+    "name": "Vanilla Bean Chai Snow",
+    "base": "Iced Chai Tea Latte",
+    "customizations": ["oatmilk", "vanilla bean powder", "vanilla sweet cream cold foam"],
+    "flavor": "creamy chai with vanilla dessert tone",
+    "tags": ["dessert", "spiced", "foam", "cold"],
+    "popularity": 92
+  },
+  {
+    "name": "Hazelnut White Mocha Drift",
+    "base": "Iced White Mocha",
+    "customizations": ["almondmilk", "one pump hazelnut", "light whip"],
+    "flavor": "sweet white mocha and nutty finish",
+    "tags": ["dessert", "nutty", "cold"],
+    "popularity": 83
+  },
+  {
+    "name": "Brown Butter Toffee Latte",
+    "base": "Blonde Latte",
+    "customizations": ["oatmilk", "toffee nut syrup", "brown sugar syrup"],
+    "flavor": "toasted sugar, creamy espresso",
+    "tags": ["cozy", "caramel", "warm"],
+    "popularity": 79
+  },
+  {
+    "name": "Black Tea Citrus Cooler",
+    "base": "Iced Black Tea",
+    "customizations": ["lemonade", "one pump classic", "extra ice"],
+    "flavor": "zesty tea, lightly sweet",
+    "tags": ["refreshing", "citrus", "cold"],
+    "popularity": 68
+  },
+  {
+    "name": "Caramel Apple Chai",
+    "base": "Iced Chai Tea Latte",
+    "customizations": ["oatmilk", "apple brown sugar syrup", "caramel drizzle"],
+    "flavor": "spiced apple pie vibe",
+    "tags": ["seasonal", "spiced", "caramel", "cold"],
+    "popularity": 87
+  },
+  {
+    "name": "Espresso Tonic Berry Hint",
+    "base": "Iced Espresso",
+    "customizations": ["tonic water", "light strawberry puree", "orange slice garnish"],
+    "flavor": "bitter-sparkling with berry note",
+    "tags": ["creative", "refreshing", "coffee-forward"],
+    "popularity": 58
+  },
+  {
+    "name": "Pistachio Cream Cold Brew",
+    "base": "Cold Brew",
+    "customizations": ["pistachio syrup", "sweet cream cold foam", "salted topping"],
+    "flavor": "nutty and silky",
+    "tags": ["nutty", "foam", "cold"],
+    "popularity": 89
+  },
+  {
+    "name": "Vanilla Cinnamon Flat White",
+    "base": "Flat White",
+    "customizations": ["oatmilk", "vanilla syrup", "cinnamon sprinkle"],
+    "flavor": "smooth microfoam with warm vanilla",
+    "tags": ["warm", "cozy", "vanilla"],
+    "popularity": 74
+  },
+  {
+    "name": "Coconut Lime Refresher",
+    "base": "Pineapple Passionfruit Refresher",
+    "customizations": ["coconutmilk", "light lime base", "freeze-dried lime zest"],
+    "flavor": "creamy tropical citrus",
+    "tags": ["tropical", "refreshing", "cold"],
+    "popularity": 66
+  },
+  {
+    "name": "Maple Oat Cortado",
+    "base": "Cortado-style espresso",
+    "customizations": ["oatmilk", "maple syrup", "tiny cinnamon pinch"],
+    "flavor": "small, bold, maple warmth",
+    "tags": ["coffee-forward", "cozy", "warm"],
+    "popularity": 63
+  },
+  {
+    "name": "Strawberry Vanilla Lemon Fizz",
+    "base": "Iced Passion Tango Tea",
+    "customizations": ["strawberry puree", "light lemonade", "one pump vanilla"],
+    "flavor": "bright berry lemonade",
+    "tags": ["fruity", "refreshing", "cold"],
+    "popularity": 77
+  },
+  {
+    "name": "Toasted White Mocha Cream",
+    "base": "Iced Latte",
+    "customizations": ["white mocha sauce", "oatmilk", "toffee topping", "sweet cream cold foam"],
+    "flavor": "sweet toasted dessert cup",
+    "tags": ["dessert", "foam", "caramel", "cold"],
+    "popularity": 90
+  },
+  {
+    "name": "Honey Citrus Matcha",
+    "base": "Iced Matcha Latte",
+    "customizations": ["oatmilk", "honey blend", "light lemonade splash"],
+    "flavor": "earthy, honeyed citrus",
+    "tags": ["matcha", "refreshing", "cold"],
+    "popularity": 71
+  }
+]
