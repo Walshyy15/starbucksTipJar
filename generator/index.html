@@ -5,25 +5,50 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Generate fan-made Starbucks-style drink ideas and reconstruct messy orders into clean formats."
+      content="Generate fan-made Starbucks-style drink ideas powered by real Reddit trends. Reconstruct messy orders and discover fasting-friendly options."
     />
     <title>Sbux Sips Generator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
+    <div class="bg-glow bg-glow--1"></div>
+    <div class="bg-glow bg-glow--2"></div>
+
     <main class="app-shell">
-      <header class="hero card">
-        <p class="eyebrow">Static, fan-made drink assistant</p>
-        <h1>Sbux Sips Generator</h1>
-        <p class="subtext">
-          Get inspired by trending Starbucks-style combinations and turn messy text into structured orders.
-        </p>
+      <!-- Header -->
+      <header class="hero card glass">
+        <div class="hero__top">
+          <div>
+            <p class="eyebrow">☕ Fan-made drink assistant</p>
+            <h1>Sbux Sips Generator</h1>
+            <p class="subtext">
+              Discover trending Starbucks-style drinks from Reddit, generate creative combos, and clean up messy orders.
+            </p>
+          </div>
+          <button id="themeToggle" class="theme-btn" type="button" title="Toggle dark/light mode" aria-label="Toggle theme">
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </button>
+        </div>
+
+        <!-- Reddit status -->
+        <div id="redditStatus" class="reddit-status">
+          <span class="reddit-dot"></span>
+          <span id="redditStatusText">Checking Reddit trends…</span>
+        </div>
       </header>
 
-      <section class="card" aria-label="Drink generator">
+      <!-- ─── DRINK GENERATOR ─── -->
+      <section class="card glass" aria-label="Drink generator" id="generatorSection">
         <div class="section-title-row">
-          <h2>Drink Generator</h2>
-          <span class="chip">Custom fan-made Starbucks-style drink</span>
+          <h2>🧋 Drink Generator</h2>
+          <span class="chip">Custom fan-made drink</span>
         </div>
 
         <label for="cravingInput" class="label">What are you craving?</label>
@@ -31,74 +56,70 @@
           <input
             id="cravingInput"
             type="text"
-            placeholder="e.g., something cozy with cinnamon"
+            placeholder="e.g., something cozy with cinnamon…"
             autocomplete="off"
           />
-          <button id="generateBtn" type="button">Generate Drink</button>
+          <button id="generateBtn" type="button">
+            <span class="btn-icon">✨</span> Generate
+          </button>
         </div>
 
+        <!-- Mode toggle -->
         <fieldset class="mode-toggle" aria-label="Generation mode">
           <legend>Mode</legend>
           <label class="toggle-option">
             <input type="radio" name="mode" value="trending" checked />
-            <span>Trending Mode</span>
+            <span>🔥 Trending</span>
           </label>
           <label class="toggle-option">
             <input type="radio" name="mode" value="creative" />
-            <span>Creative Mode</span>
+            <span>🎨 Creative</span>
           </label>
         </fieldset>
 
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-=======
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
+        <!-- Fasting controls -->
         <div class="fasting-controls" aria-label="Fasting settings">
           <label class="toggle-option fasting-toggle">
             <input id="fastingFriendly" type="checkbox" />
-            <span>Fit my fasting 18:6 plan</span>
+            <span>🕐 Fit my fasting 18:6 plan</span>
           </label>
-          <label for="fastingWindow" class="inline-label">Timing</label>
-          <select id="fastingWindow">
-            <option value="fasting">Fasting window (very low calorie)</option>
-            <option value="eating" selected>Eating window (lighter custom drink)</option>
-          </select>
-          <p class="helper-text">
-            Fasting mode prefers unsweetened / low-calorie customizations. Eating mode keeps drinks lighter in sugar.
-          </p>
+          <div class="fasting-sub">
+            <label for="fastingWindow" class="inline-label">Timing</label>
+            <select id="fastingWindow" disabled>
+              <option value="fasting">Fasting window (very low calorie)</option>
+              <option value="eating" selected>Eating window (lighter custom drink)</option>
+            </select>
+            <p class="helper-text">
+              Fasting mode prefers unsweetened / low-calorie options. Eating mode keeps drinks lighter in sugar.
+            </p>
+          </div>
         </div>
 
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
         <article id="generatorResult" class="result-card empty" aria-live="polite">
-          <p>Generated drink details will appear here.</p>
+          <p class="placeholder-text">Generated drink details will appear here.</p>
         </article>
       </section>
 
-      <section class="card" aria-label="Order reconstruction tool">
+      <!-- ─── REDDIT TRENDS ─── -->
+      <section class="card glass" aria-label="Live Reddit trends" id="trendsSection">
         <div class="section-title-row">
-          <h2>Reconstruction Tool</h2>
+          <h2>📡 Live Reddit Trends</h2>
+          <button id="refreshReddit" type="button" class="secondary small">↻ Refresh</button>
+        </div>
+        <p class="subtext">Real posts scraped from r/starbucks — updated every page load.</p>
+        <div id="redditTrends" class="trends-grid">
+          <div class="trends-skeleton">
+            <div class="skel-card"></div>
+            <div class="skel-card"></div>
+            <div class="skel-card"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── RECONSTRUCTION TOOL ─── -->
+      <section class="card glass" aria-label="Order reconstruction tool" id="reconstructSection">
+        <div class="section-title-row">
+          <h2>🔧 Reconstruction Tool</h2>
           <span class="chip">Parse messy order text</span>
         </div>
 
@@ -111,11 +132,17 @@
         <button id="reconstructBtn" type="button" class="secondary">Reconstruct Order</button>
 
         <article id="reconstructResult" class="result-card empty" aria-live="polite">
-          <p>Structured order details will appear here.</p>
+          <p class="placeholder-text">Structured order details will appear here.</p>
         </article>
       </section>
+
+      <!-- Footer -->
+      <footer class="footer">
+        <p>Custom fan-made Starbucks-style drink assistant — not affiliated with Starbucks Corporation.</p>
+        <p class="footer-sub">Trends sourced from public Reddit posts in r/starbucks.</p>
+      </footer>
     </main>
 
-    <script src="./app.js" defer></script>
+    <script src="./app.js"></script>
   </body>
 </html>
