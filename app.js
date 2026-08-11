@@ -1719,122 +1719,44 @@ function redistributeBills() {
     // Calculate total needed
     const totalNeeded = lastCalculationResults.reduce((sum, p) => sum + p.wholeDollarPayout, 0);
 
-    // Create a copy with original indices to maintain order
-    let remainingBills = { ...availableBills };
-
-    // Track totals for updating the UI
-    let usedBills = { twenties: 0, tens: 0, fives: 0, ones: 0 };
-
-    // Track shortfalls per partner
-    const shortfalls = [];
-
-    // Create indexed array for sorting while preserving original indices
-    const indexedResults = lastCalculationResults.map((partner, index) => ({
-        ...partner,
-        originalIndex: index,
-        // Create unique key combining name and number for matching
-        uniqueKey: `${partner.name}|${partner.number}|${partner.hours}`
-    }));
-
-    // Sort partners by payout (highest first) to allocate larger bills first
-    const sortedResults = [...indexedResults].sort((a, b) => b.wholeDollarPayout - a.wholeDollarPayout);
-
-    // Map to store breakdown by unique key
-    const breakdownMap = new Map();
-
-    for (const partner of sortedResults) {
-        let remaining = partner.wholeDollarPayout;
-        const breakdown = { twenties: 0, tens: 0, fives: 0, ones: 0 };
-
-        // Try to allocate bills in order of preference: $20, $10, $5, $1
-        // ONLY allocate if it doesn't exceed the remaining amount needed
-
-        // Allocate twenties
-        while (remaining >= 20 && remainingBills.twenties > 0) {
-            breakdown.twenties++;
-            remainingBills.twenties--;
-            remaining -= 20;
-        }
-
-        // Allocate tens
-        while (remaining >= 10 && remainingBills.tens > 0) {
-            breakdown.tens++;
-            remainingBills.tens--;
-            remaining -= 10;
-        }
-
-        // Allocate fives
-        while (remaining >= 5 && remainingBills.fives > 0) {
-            breakdown.fives++;
-            remainingBills.fives--;
-            remaining -= 5;
-        }
-
-        // Allocate ones
-        while (remaining >= 1 && remainingBills.ones > 0) {
-            breakdown.ones++;
-            remainingBills.ones--;
-            remaining -= 1;
-        }
-
-        // Track shortfall if we couldn't fully pay this partner
-        if (remaining > 0) {
-            shortfalls.push({
-                name: partner.name,
-                owed: partner.wholeDollarPayout,
-                received: partner.wholeDollarPayout - remaining,
-                shortfall: remaining
-            });
-        }
-
-        // Track used bills
-        usedBills.twenties += breakdown.twenties;
-        usedBills.tens += breakdown.tens;
-        usedBills.fives += breakdown.fives;
-        usedBills.ones += breakdown.ones;
-
-        // Store breakdown by unique key for later matching
-        breakdownMap.set(partner.uniqueKey, {
-            breakdown,
-            adjustedPayout: partner.wholeDollarPayout - remaining,
-            hasShortfall: remaining > 0,
-            shortfallAmount: remaining
-        });
+    const allocator = window.BillAllocator;
+    if (!allocator || typeof allocator.allocateBills !== 'function') {
+        console.error('Bill allocator is unavailable. Falling back to existing bill breakdowns.');
+        return;
     }
 
-    // Calculate leftover bills
-    const leftoverBills = {
-        twenties: remainingBills.twenties,
-        tens: remainingBills.tens,
-        fives: remainingBills.fives,
-        ones: remainingBills.ones
-    };
-    const leftoverValue = (leftoverBills.twenties * 20) + (leftoverBills.tens * 10) +
-        (leftoverBills.fives * 5) + (leftoverBills.ones * 1);
-    const hasLeftovers = leftoverValue > 0;
+    const solverResult = allocator.allocateBills(lastCalculationResults, availableBills);
 
-    // Build final results in ORIGINAL order by matching unique keys
-    const updatedResults = lastCalculationResults.map(partner => {
-        const uniqueKey = `${partner.name}|${partner.number}|${partner.hours}`;
-        const redistributed = breakdownMap.get(uniqueKey);
+    const updatedResults = lastCalculationResults.map((partner, index) => {
+        const allocation = solverResult.allocation[index] || {
+            breakdown: partner.breakdown,
+            paid: partner.wholeDollarPayout,
+            shortfall: 0
+        };
 
-        if (redistributed) {
-            return {
-                ...partner,
-                breakdown: redistributed.breakdown,
-                adjustedPayout: redistributed.adjustedPayout,
-                hasShortfall: redistributed.hasShortfall,
-                shortfallAmount: redistributed.shortfallAmount
-            };
-        }
-
-        // Fallback if no match (should not happen)
         return {
             ...partner,
-            breakdown: partner.breakdown,
-            adjustedPayout: partner.wholeDollarPayout
+            breakdown: allocation.breakdown,
+            adjustedPayout: allocation.paid,
+            hasShortfall: allocation.shortfall > 0,
+            shortfallAmount: allocation.shortfall
         };
     });
+
+    const shortfalls = updatedResults
+        .filter(partner => partner.shortfallAmount > 0)
+        .map(partner => ({
+            name: partner.name,
+            owed: partner.wholeDollarPayout,
+            received: partner.adjustedPayout,
+            shortfall: partner.shortfallAmount
+        }));
+
+    const leftoverBills = solverResult.leftoverBills;
+    const leftoverValue = (leftoverBills.twenties * 20) + (leftoverBills.tens * 10) +
+        (leftoverBills.fives * 5) + (leftoverBills.ones * 1);
+
+    debugLog('Bill allocation diagnostics:', solverResult.diagnostics);
 
     // Re-render partner cards with new breakdown (in original order)
     renderResultsTable(updatedResults, lastHourlyRate);
