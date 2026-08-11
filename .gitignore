@@ -4,6 +4,7 @@ index.local.html
 # IDE
 .vscode/
 .idea/
+.worktrees/
 
 # OS files
 .DS_Store
